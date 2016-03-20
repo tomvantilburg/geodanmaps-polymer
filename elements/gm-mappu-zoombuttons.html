@@ -36,9 +36,11 @@ Polymer({
     },
     zoomIn: function(){
     	this.map.zoom++;
+    	this.map.redraw();
     },
     zoomOut: function(){
     	this.map.zoom--;
+    	this.map.redraw();
     }
     
 });

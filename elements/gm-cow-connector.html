@@ -59,6 +59,10 @@ Polymer({
     		type: Array,
     		notify: true
     	},
+    	chatitems: {
+    		type: Array,
+    		notify: true
+    	},
     	startlocation: {
     		type: Object,
     		notify: true
@@ -100,6 +104,10 @@ Polymer({
     		self.iconitems = self.project.items()
     			.filter(function(d){
     				return !d.deleted() && d.data('type') == 'icon';
+    			});
+    		self.chatitems = self.project.items()
+    			.filter(function(d){
+    				return !d.deleted() && d.data('type') == 'chat';
     			}); 
     		
     	}

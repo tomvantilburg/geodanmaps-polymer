@@ -17,6 +17,7 @@
 		padding: 15px;
 		font-size: 16pt;
 		cursor: pointer;
+		color: gray;
 	}
 	.icon {
 		width: 24px;
@@ -108,8 +109,14 @@ Polymer({
 					id: s.id
 				});
 			});
+			var isopened = function(d){
+					if (d.title == 'Incident') return true;
+					else if (d.title == 'Team ' + self.activeuser.id()) return true;
+					else return false;
+			};
+			
 			var view = {
-				opened: false,
+				opened: isopened(d),
 				title: d.title,
 				id: d.view, 
 				subviews: subviews,

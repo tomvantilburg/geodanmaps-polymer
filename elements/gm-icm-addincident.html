@@ -4,13 +4,13 @@
 <link rel="import" href="../bower_components/polymer/polymer.html">
 <link rel="import" href="../bower_components/paper-button/paper-button.html">
 <link rel="import" href="../bower_components/paper-input/paper-input.html">
-<link rel="import" href="../bower_components/iron-flex-layout/classes/iron-flex-layout.html">
+<link rel="import" href="../bower_components/iron-flex-layout/iron-flex-layout-classes.html">
 
 <link rel="import" href="./gm-mappu-map.html">
 <link rel="import" href="./gm-geosearch.html">
 
 <dom-module id="gm-icm-addincident">
-
+<style include="iron-flex iron-flex-alignment">
 <style>
 #paper-button {
     background: steelBlue;
@@ -68,12 +68,12 @@ Polymer({
 		this.activate();
 	},
 	activate: function(){
-		this.startlocation = {lng:4.9,lat:52.2,zoom: 16};
+		this.startlocation = {lng:5.124892,lat:51.865394,zoom: 16};
 		var center = this.startlocation;
 		this.map.center = [center.lng,center.lat];
-		this.map.zoom = center.zoom;
 		var self = this;
 		window.setTimeout(function(){
+			//self.map.zoom = center.zoom;
 			self.map.resize();
 		},1000); //TODO
 	},

@@ -1,10 +1,12 @@
 <link rel="import" href="../../bower_components/polymer/polymer.html">
 <link rel="import" href="../../bower_components/iron-icons/maps-icons.html">
+<link rel="import" href="../../bower_components/iron-collapse/iron-collapse.html">
 <link rel="import" href="../../bower_components/iron-selector/iron-selector.html">
 <link rel="import" href="../../bower_components/iron-pages/iron-pages.html">
-<link rel="import" href="../../bower_components/iron-flex-layout/classes/iron-flex-layout.html">
+<link rel="import" href="../../bower_components/iron-flex-layout/iron-flex-layout-classes.html">
 <link rel="import" href="../../bower_components/neon-animation/neon-animation.html">
 <link rel="import" href="../../bower_components/paper-toolbar/paper-toolbar.html">
+<link rel="import" href="../../bower_components/paper-toggle-button/paper-toggle-button.html">
 <link rel="import" href="../../bower_components/paper-drawer-panel/paper-drawer-panel.html">
 <link rel="import" href="../../bower_components/paper-icon-button/paper-icon-button.html">
 <link rel="import" href="../../bower_components/paper-listbox/paper-listbox.html">
@@ -21,19 +23,24 @@
 <link rel="import" href="../../elements/gm-cow-userlist.html">
 <link rel="import" href="../../elements/gm-cow-text.html">
 <link rel="import" href="../../elements/gm-icm-text.html">
+<link rel="import" href="../../elements/gm-icm-chat.html">
 <link rel="import" href="../../elements/gm-mappu-map.html">
+<link rel="import" href="../../elements/gm-mappu-layermanager.html">
 <link rel="import" href="../../elements/gm-mappu-cowlayer.html">
 <link rel="import" href="../../elements/gm-mappu-zoombuttons.html">
 <link rel="import" href="../../elements/gm-mappu-drawbuttons.html">
 <link rel="import" href="../../elements/gm-mappu-stylesets.html">
 
 <dom-module id="demo-geofort">
+<style include="iron-flex iron-flex-alignment">
 <style>
 	paper-header-panel {
-	  height: 100%;
 	  background: white;
 	}
-	 .menu {
+	iron-pages {
+		background: white;
+	}
+	.menu {
 		cursor: pointer;
 		background: white;
 	}
@@ -42,18 +49,32 @@
 		color: white;
 	}
 	
-	#eagletext {
-		width:600px;
-		overflow: auto;
-		z-index: 100;
-	}
 	
+	#layermngr {
+		position: absolute;
+		right: 0px;
+		bottom: 0px;
+		z-index: 10001;
+	}
+	#togglelayers {
+		position: absolute;
+		background: gray;
+		margin: 5px; 
+		right: 0px;
+		top: 250px;
+		z-index: 10001;
+	}
+	#togglelayers active {
+    background: orange;
+  }
 	#toast {
 		z-index: 1000;
 	}
 	
+	
 	paper-card {
 		width: 400px;
+		cursor: pointer;
 	}
 
 </style>
@@ -75,38 +96,43 @@
 		activeuser="{{activeuser}}"
 		textitems="{{textitems}}"
 		featureitems="{{featureitems}}"
+		chatitems="{{chatitems}}"
 		itemstore="{{itemstore}}"
 		startlocation="{{startlocation}}"
 		></gm-cow-connector>
+	<!--TT: no text needed for geofort
 	<gm-cow-text 
 		core="{{core}}"
 		projectid="{{curproject._id}}"
 		data="{{textdata}}"
 		></gm-cow-text>
-		
+	-->
 	<paper-drawer-panel id='drawerpanel'>
 	 <!-- MENU -->
 	 <paper-header-panel mode="seamed" drawer>
 	 	<paper-toolbar>
 	 		<img src='../images/icon-eagle.png'/>
 	 	</paper-toolbar>
-	 	<div class='accounting'>
-		</div>
-    	<iron-selector attr-for-selected="name" selected="{{selected}}">
-			<paper-item class='menu' name='users'>Team</paper-item>
-			<template is="dom-if" if="[[account]]">
-				<paper-item class='menu' name='projects'>Incident</paper-item>
-				<template is="dom-if" if="[[curproject]]">
-					<paper-item class='menu' name='map'>Kaart</paper-item>
+	 	<div class='vertical layout'>
+			<div class='accounting'>
+			</div>
+			<iron-selector attr-for-selected="name" selected="{{selected}}">
+				<paper-item class='menu' name='users'>Team</paper-item>
+				<template is="dom-if" if="[[account]]">
+					<paper-item class='menu' name='projects'>Incident</paper-item>
+					<template is="dom-if" if="[[curproject]]">
+						<paper-item class='menu' name='main'>Kaart</paper-item>
+					</template>
 				</template>
-			</template>
-    	</iron-selector>
-    </paper-header-panel>
+			</iron-selector>
+			
+		</div>
+   </paper-header-panel>
     <!--MAIN SCREEN-->
     <paper-header-panel main>
     	<paper-toolbar>
     		<paper-icon-button icon="menu" paper-drawer-toggle></paper-icon-button>
-    		<div class='title'>Team: {{selectedteam}} {{curproject._data.name}}</div>
+    		<div class='title flex'>Team: {{account.id}} / {{curproject._data.name}}</div>
     	</paper-toolbar>
 		<iron-pages class='content fit pages' attr-for-selected="name" selected="{{selected}}"
 			entry-animation="fade-in-animation" exit-animation="fade-out-animation">
@@ -124,7 +150,8 @@
 			<gm-cow-projectlist name='projects' projects="{{projects}}" 
 				selectedproject="{{selectedproject}}"></gm-cow-projectlist>
 		
-			<div name="map" class='layout horizontal'>
+			<div name="main" class='layout horizontal'>
+				<!-- No text needed for geofort 
 				<gm-icm-text id="eagletext"
 					itemconfig="{{itemconfig}}"
 					data="{{textdata}}" 
@@ -133,6 +160,10 @@
 					activeuser="{{activeuser}}"
 					on-goto-location="gotolocation">
 				</gm-icm-text>
+				-->
+				<iron-collapse id="layermngr" class='collapse-content' opened='[[layerstoggled]]'>
+					<gm-mappu-layermanager map="{{map}}"></gm-mappu-layermanager>
+				</iron-collapse>
 				<gm-mappu-map class='flex' id='mapelement' map="[[map]]">
 					<gm-mappu-zoombuttons id="zoombuttons" map="{{map}}"></gm-mappu-zoombuttons>
 					<gm-mappu-drawbuttons id="drawbuttons"
@@ -140,20 +171,24 @@
 						store="{{itemstore}}"
 						styleset="{{styleset}}"
 					></gm-mappu-drawbuttons>
+					<paper-fab mini id='togglelayers' toggles icon="menu" active='{{layerstoggled}}'></paper-fab>
 					<gm-mappu-stylesets styleset1="{{styleset}}"></gm-mappu-stylesets>
+					<gm-mappu-cowlayer 
+						id="cowlayer"
+						map="{{map}}" 
+						features="{{featureitems}}" 
+						store="{{itemstore}}" 
+						layer="{{cowlayer}}">
+					</gm-mappu-cowlayer>
 				</gm-mappu-map>
-				<gm-mappu-cowlayer 
-					id="cowlayer"
-					map="{{map}}" 
-					features="{{featureitems}}" 
+				<!--
+				<gm-icm-chat id="eaglechat"
+					chatitems="{{chatitems}}" 
 					store="{{itemstore}}" 
-					layer="{{cowlayer}}">
-				</gm-mappu-cowlayer>
-				
-			</div>
-			
-			<div name="chat">
-				Chat will be here...
+					activeuser="{{activeuser}}"
+					on-goto-location="gotolocation">
+		 </gm-icm-chat>
+		 -->
 			</div>
 			
 		</iron-pages>
@@ -195,6 +230,33 @@ Polymer({
     ready: function(){
     	var self = this;
     	this.map = this.$.mapelement.map;
+    	var ahnlayer = new d3.mappu.RasterLayer("AHN", {
+				ogc_type: 'wms',
+				url: "http://t3.edugis.nl/tiles/tilecache.py",
+				layers: 'hoogtes',
+				visible: false,
+				opacity: 0,
+				config: {
+					title: 'Hoogte maaiveld'
+				}
+			}).addTo(this.map);
+    	var floodlayer = new d3.mappu.VectorLayer('Overstroming',{
+    			reproject: true,
+    			style: {
+    				fill: 'none',
+    				stroke: 'steelBlue',
+    				'stroke-width': 2
+    			}
+    	}).addTo(this.map);
+    	floodlayer.setZIndex(0); //below sketch layer
+    	d3.json('./data/flood_merged.geojson',function(data){
+					data.features.forEach(function(d,i){
+							d.id = i;
+					});
+					floodlayer.data = data.features;
+			});
+
+    	
     	this.cowconfig = {
     			protocol: 'wss',
     			url: 'websocket.geodan.nl',
@@ -205,6 +267,69 @@ Polymer({
     	this.addEventListener('gotolocation',function(d){
     		self.gotolocation(d);
     	});
+    	this.addEventListener('newincident',function(e){
+				var name = e.detail.msg.name;
+				var project = this.core.projects({});
+				project.data('name', name)
+					.data('status','Actief')
+					.data('type', 'Geofort')
+					.data('location',{lat: 51.881892, lon: 5.110007, zoomlevel: 20})
+					.data('teams',[
+						{id: 1, name: 'Incident', boxes: [
+								{id: 1, type: 'text', name: 'Meldingen'}
+						]},
+						{id: 2, name: 'Team Populatie', boxes: [
+								{id: 2, type: 'text', name: 'Opdracht'},
+								{id: 1, type: 'text', name: 'Samenvatting'}
+						]},
+						{id: 3, name: 'Team Evacuatie', boxes: [
+								{id: 2, type: 'text', name: 'Opdracht'},
+								{id: 1, type: 'text', name: 'Samenvatting'}
+						]},
+						{id: 4, name: 'Team Opvang', boxes: [
+								{id: 2, type: 'text', name: 'Opdracht'},
+								{id: 1, type: 'text', name: 'Samenvatting'}
+						]},
+						{id: 5, name: 'Team Communicatie', boxes: [
+								{id: 2, type: 'text', name: 'Opdracht'},
+								{id: 1, type: 'text', name: 'Samenvatting'}
+						]}
+					]).sync();
+				
+				var populatietext = ""
+				+ "U moet zien uit te vinden waar en hoeveel bewoners in het gebied zijn.<br>"
+				+ "Let daarbij extra op kwetsbare groepen zoals kinderopvang en zorglocaties en gebruik daarvoor google maps.<br>"
+				+ "Voeg in ieder geval de volgende locaties toe:<br>"
+				+ "   - Kinderdagverblijf de Asperantjes, 20 kinderen<br>"
+				+ "   - Basisschool De Open Poort, 250 kinderen.<br>"
+				+ "Eventuele zorglocaties in kaart brengen, zoals beschermd wonen en senioren.";
+		
+				var evacuatietext = ""
+				+ "U moet de beste evacuatieroutes vinden en intekenen met behulp van de hoogtekaart.<br>" 
+				+ "Daarnaast bent u verantwoordelijk voor de wegafzetting rond het gebied.<br><br>"
+				+ "Bedenk wat er verder nodig is bij een evacuatie en zet dit in de kaart.";
+		
+				var opvangtext = ""
+				+ "U moet de locaties zoeken waar de evacuees kunnen worden opgevangen. Gebruik hiervoor google maps en zoek naar sporthallen. Voeg in ieder geval de volgende locaties toe:<br>"
+				+ "- Verzorgingstehuis Ter Leede, opvangcapaciteit 50 bedden<br>"
+				+ "- Beatrix ziekenhuis, opvang speciale zorg 20, normaal 80 bed.<br>"
+				+ "- Verzorgingstehuis Lingehof, noodcapaciteit 25 bedden. <br>"
+				+ "- Sporthal Terweijde, maximaal 500 personen. <br>"
+				+ "- Sporthal De Smidseberg, maximaal 1500 personen<br>";
+		
+				var communicatietext = ""
+				+ "U moet zorgen dat alle teams voldoende informatie verzamelen voor een correcte evacuatie."
+				+ "Schrijf een persbericht voor de burgemeester zodat de bevolking en de pers ingelicht kan worden over de juiste stand van zaken en de procedure van de evacuatie.";
+		
+				
+				var timestamp = new Date().getTime();
+				//project.items({_id:timestamp + 't0'}).data({type: "text", team: 1, box: 1, text: incidenttext}).sync();
+				project.items({_id:timestamp + 't1'}).data({type: "text", team: 2, box: 2, text: populatietext}).sync();
+				project.items({_id:timestamp + 't2'}).data({type: "text", team: 3, box: 2, text: evacuatietext}).sync();
+				project.items({_id:timestamp + 't3'}).data({type: "text", team: 4, box: 2, text: opvangtext}).sync();
+				project.items({_id:timestamp + 't4'}).data({type: "text", team: 5, box: 2, text: communicatietext}).sync();
+			
+			});
     	this.teams = [{
     		id: 'Populatie',
     		text: 'U gaat zich bezig houden met het in kaart brengen van de hoeveelheid mensen die in het rampgebied wonen en werken.'
@@ -221,16 +346,20 @@ Polymer({
     },
     _projectChanged: function(){
     	this.selected = 'map';
-    	this.map.center = [5.2,52.2];
+    	this.map.center = [5.125256,51.865732];
+    	this.map.redraw();
     },
     _teamChanged: function(team){
     	//Spoofin an account for cow-connector
     	this.account = {
-    		ID: this.teams[team].id,
-    		FirstName: this.teams[team].id,
-    		LastName: ''
+    		id: this.teams[team].id,
+    		name: this.teams[team].id
     	};
     	this.selected = 'projects';
+    	if (!this.core.users(this.teams[team].id)){
+    		this.core.users({_id: this.teams[team].id}).sync();
+    	}
+    	this.core.user(this.teams[team].id);
     },
     _activeuserChanged: function(){
     	if (this.activeuser){

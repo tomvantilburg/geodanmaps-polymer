@@ -38,6 +38,7 @@
     "jsonld": "~0.3",
     "proj4": "~2.3.12",
     "turf": "~2.0.2",
-    "Sortable": "~1.4.2"
+    "Sortable": "~1.4.2",
+    "app-layout": "PolymerLabs/app-layout#^0.0.12"
   }
 }

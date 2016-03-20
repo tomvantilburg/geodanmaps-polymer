@@ -4,6 +4,7 @@
 <link rel="import" href="../../bower_components/paper-dialog-scrollable/paper-dialog-scrollable.html">
 <link rel="import" href="../../elements/gm-mappu-map.html">
 <link rel="import" href="../../elements/gm-mappu-layermanager.html">
+<link rel="import" href="../../elements/gm-mappu-postgismanager.html">
 <link rel="import" href="../../elements/gm-mappu-zoombuttons.html">
 <link rel="import" href="../../elements/gm-mappu-geosearch.html">
 <link rel="import" href="../../elements/gm-mappu-catalog.html">
@@ -48,7 +49,7 @@
     }
     #layermanager {
     	position: absolute;
-    	left: 10px;
+    	right: 10px;
     	top: 70px;
     	min-width: 200px;
     }
@@ -65,16 +66,31 @@
     	bottom: 10px;
     	z-index: 100;
     }
+    
+    gm-mappu-postgismanager {
+    	position: absolute;
+    	left: 0px;
+    	top: 0px;
+    	width: 200px;
+    	height: 100%;
+    	background: white;
+    	z-index: 1002;
+    }
 	
 </style>
 <template>
+		<gm-mappu-postgismanager id='postgismanager' url='http://192.168.40.2:8080/data'></gm-mappu-postgismanager>
+		<gm-mappu-map id="mapelement" map="{{map}}"></gm-mappu-map>
+		<gm-mappu-zoombuttons id="zoombuttons" map="[[map]]"></gm-mappu-zoombuttons>
+		<gm-mappu-layermanager id="layermanager" map="{{map}}"></gm-mappu-layermanager>
+		<!--
 		<gm-cas></gm-cas>
 		<gm-routing></gm-routing>
-		<gm-mappu-map id="mapelement"></gm-mappu-map>
-		<gm-mappu-geosearch id="geosearch" map="{{map}}"></gm-mappu-geosearch>
+		
+		<gm-geosearch id="geosearch" map="{{map}}"></gm-geosearch>
 		<gm-mappu-sketch id="sketch" layer="{{sketchlayer}}" styleset="{{styleset}}"></gm-mappu-sketch>
-		<gm-mappu-zoombuttons id="zoombuttons" map="{{map}}"></gm-mappu-zoombuttons>
-		<gm-mappu-layermanager id="layermanager" map="{{map}}"></gm-mappu-layermanager>
+		
+		
 
 		<paper-fab icon="add" id="catalog_button" on-click="toggleCatalog">plain dialog</paper-fab>
 		<paper-dialog id='dialog'>
@@ -83,7 +99,7 @@
 				<gm-mappu-catalog id="catalog" layers="{{catlayers}}" map="{{map}}"></gm-mappu-catalog>
 			</paper-dialog-scrollable>
 		</paper-dialog>
-		
+		-->
 		
 	</template>
 </dom-module>
@@ -95,9 +111,17 @@ Polymer({
     	map: Object,
     	sketchlayer: Object,
     },
+    
     ready: function(){
+    	var self = this;
+    	var map = self.$.mapelement.map;
+    	this.$.postgismanager.addEventListener('addtwkblayer',function(e){
+    			var layer = e.detail;
+    			layer.addTo(map);
+    	});
     	//MAP
-    	this.map = this.$.mapelement.map;
+    	
+    	/*
     	var testlayer = new d3.mappu.RasterLayer('Mapbox baselayer',  {
             ogc_type: 'tms',
             url: 'https://{s}.tiles.mapbox.com/v4/mapbox.streets/{z}/{x}/{y}.png?access_token=pk.eyJ1IjoibWFwYm94IiwiYSI6IlhHVkZmaW8ifQ.hAMX5hSW-QnTeRCMAy9A8Q',
@@ -111,6 +135,7 @@ Polymer({
             visible: true
 		 })
 		 .addTo(this.map);
+		 
     	this.sketchlayer = new d3.mappu.VectorLayer('Sketch',{
     		reproject: true,
 			style: {
@@ -119,7 +144,7 @@ Polymer({
 			},
 			labelfield: 'name'
     	}).addTo(this.map);
-    	
+    	*/
     	this.styleset = {
     		iconset:[
          {"cat":"none", "text":"ZW", "url":"/sites/eagle/assets/icons/mapicons/direction_downleft.png"}
