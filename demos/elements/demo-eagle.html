@@ -239,26 +239,28 @@ Polymer({
     	});
     },
     _accountChanged: function(acc){
-    	switch (acc.OrganisationCode){
-    	case 'GEOF7646XXXX':
-    		this.cowconfig = {
-    			protocol: 'wss',
-    			url: 'sslgw.geodan.nl/eaglewater/',
-    			port: 8081,
-    			dir: 'geofort',
-    			key: 'geofort'
-    		};
-    		break;
-    	default:
-    		this.cowconfig = {
-    			protocol: 'ws',
-    			url: 'eaglewater-ontw.geodan.nl',
-    			port: 8081,
-    			dir: 'ontw',
-    			key: 'ontw'
-    		};
-    		break;
-    	}
+    	if (acc.OrganisationCode){
+			switch (acc.OrganisationCode){
+			case 'GEOF7646XXXX':
+				this.cowconfig = {
+					protocol: 'wss',
+					url: 'sslgw.geodan.nl/eaglewater/',
+					port: 8081,
+					dir: 'geofort',
+					key: 'geofort'
+				};
+				break;
+			default:
+				this.cowconfig = {
+					protocol: 'ws',
+					url: 'eaglewater-ontw.geodan.nl',
+					port: 8081,
+					dir: 'ontw',
+					key: 'ontw'
+				};
+				break;
+			}
+		}
     },
     _projectChanged: function(){
     	this.selected = 'map';

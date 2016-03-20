@@ -10,7 +10,7 @@
  }
  </style>
  <template>
- 
+
  <iron-selector attr-for-selected="id" selected="{{selectedproject}}">
  	<template is="dom-repeat" items="{{projects}}">
  		<paper-item id="{{item._id}}">
@@ -22,7 +22,7 @@
 	</template>
  </iron-selector>
  </template>
- 
+
 </dom-module>
 
 <script>
@@ -32,7 +32,10 @@ Polymer({
 		selectedproject: {
 			type: String,
 			notify: true
-		}
+		},
+        projects: {
+            type: Array
+        }
 	},
 	updated: function(d){
 		return new Date(parseInt(d.updated())).toLocaleString();

@@ -41,33 +41,40 @@
 		background: #3f51b5;
 		color: white;
 	}
-	
+
 	#eagletext {
 		width:600px;
 		overflow: auto;
 		z-index: 100;
 	}
-	
+
 	#toast {
 		z-index: 1000;
 	}
-	
+
 	paper-card {
 		width: 400px;
+	}
+
+	.teamcard {
+		cursor: pointer;
+		margin-top: 10px;
+		margin-left: 20%;
+		
 	}
 
 </style>
 <template>
 	<paper-toast id="toast" text="{{toasttext}}"></paper-toast>
-		
-	<gm-cow-core id="cowcore" 
-		config="{{cowconfig}}" 
+
+	<gm-cow-core id="cowcore"
+		config="{{cowconfig}}"
 		core="{{core}}"
 		></gm-cow-core>
 	<gm-cow-connector id="cowconnector"
 		itemconfig = "{{itemconfig}}"
-		account="{{account}}" 
-		core="{{core}}" 
+		account="{{account}}"
+		core="{{core}}"
 		selectedproject="{{selectedproject}}"
 		project="{{curproject}}"
 		users="{{users}}"
@@ -78,12 +85,12 @@
 		itemstore="{{itemstore}}"
 		startlocation="{{startlocation}}"
 		></gm-cow-connector>
-	<gm-cow-text 
+	<gm-cow-text
 		core="{{core}}"
 		projectid="{{curproject._id}}"
 		data="{{textdata}}"
 		></gm-cow-text>
-		
+
 	<paper-drawer-panel id='drawerpanel'>
 	 <!-- MENU -->
 	 <paper-header-panel mode="seamed" drawer>
@@ -106,30 +113,30 @@
     <paper-header-panel main>
     	<paper-toolbar>
     		<paper-icon-button icon="menu" paper-drawer-toggle></paper-icon-button>
-    		<div class='title'>Team: {{selectedteam}} {{curproject._data.name}}</div>
+    		<div class='title'>Team: <span>{{selectedteam}}</span> <span>{{curproject._data.name}}</span></div>
     	</paper-toolbar>
 		<iron-pages class='content fit pages' attr-for-selected="name" selected="{{selected}}"
 			entry-animation="fade-in-animation" exit-animation="fade-out-animation">
-			
+
 			<div name='users'>
 			 <iron-selector selected="{{selectedteam}}">
 				<template is='dom-repeat' items='[[teams]]'>
-					<paper-card heading="{{item.id}}">
-					<div class="card-content">{{item.text}}</div>
-					</paper-card>
+					<paper-card class='teamcard' heading="{{item.id}}">
+						<div class="card-content">{{item.text}}</div>
+					</paper-card><br>
 				</template>
 				</iron-selector>
 			</div>
-			
-			<gm-cow-projectlist name='projects' projects="{{projects}}" 
+
+			<gm-cow-projectlist name='projects' projects="{{projects}}"
 				selectedproject="{{selectedproject}}"></gm-cow-projectlist>
-		
+
 			<div name="map" class='layout horizontal'>
 				<gm-icm-text id="eagletext"
 					itemconfig="{{itemconfig}}"
-					data="{{textdata}}" 
-					items="{{textitems}}" 
-					store="{{itemstore}}" 
+					data="{{textdata}}"
+					items="{{textitems}}"
+					store="{{itemstore}}"
 					activeuser="{{activeuser}}"
 					on-goto-location="gotolocation">
 				</gm-icm-text>
@@ -142,20 +149,20 @@
 					></gm-mappu-drawbuttons>
 					<gm-mappu-stylesets styleset1="{{styleset}}"></gm-mappu-stylesets>
 				</gm-mappu-map>
-				<gm-mappu-cowlayer 
+				<gm-mappu-cowlayer
 					id="cowlayer"
-					map="{{map}}" 
-					features="{{featureitems}}" 
-					store="{{itemstore}}" 
+					map="{{map}}"
+					features="{{featureitems}}"
+					store="{{itemstore}}"
 					layer="{{cowlayer}}">
 				</gm-mappu-cowlayer>
-				
+
 			</div>
-			
+
 			<div name="chat">
 				Chat will be here...
 			</div>
-			
+
 		</iron-pages>
     </paper-header-panel>
 </paper-drawer-panel>
@@ -190,7 +197,13 @@ Polymer({
     	},
     	itemconfig: {
     		value: function(){return {view: 'team',subview:'box',content: 'text'};}
-    	}
+    	},
+		toasttext: String,
+		account: Object,
+		users: Array,
+		startlocation: Object,
+		account: Object,
+		teams: Array
     },
     ready: function(){
     	var self = this;
@@ -248,9 +261,9 @@ Polymer({
     gotolocation: function(d){
     	var text = d.detail.text;
     	var items = this.featureitems.filter(function(d){
-			return d.data('feature').properties 
+			return d.data('feature').properties
 				&& d.data('feature').properties.label
-				&& d.data('feature').properties.label == text; 
+				&& d.data('feature').properties.label == text;
 		});
 		if (items[0]){
 			var feature = items[0].data('feature');
