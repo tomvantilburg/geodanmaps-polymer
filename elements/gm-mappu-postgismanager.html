@@ -1,0 +1,180 @@
+<link rel="import" href="../bower_components/polymer/polymer.html">
+<link rel="import" href="../bower_components/iron-ajax/iron-ajax.html">
+<link rel="import" href="../bower_components/iron-selector/iron-selector.html">
+
+<link rel="import" href="../bower_components/paper-dialog/paper-dialog.html">
+<link rel="import" href="../bower_components/paper-radio-button/paper-radio-button.html">
+<link rel="import" href="../bower_components/paper-dropdown-menu/paper-dropdown-menu.html">
+<link rel="import" href="../bower_components/paper-listbox/paper-listbox.html">
+<link rel="import" href="../bower_components/paper-item/paper-item.html">
+
+
+
+<link rel="import" href="../bower_components/iron-icons/iron-icons.html">
+<link rel="import" href="../bower_components/paper-item/paper-icon-item.html">
+<link rel="import" href="../bower_components/paper-icon-button/paper-icon-button.html">
+<link rel="import" href="../bower_components/paper-slider/paper-slider.html">
+<link rel="import" href="../bower_components/paper-toggle-button/paper-toggle-button.html">
+<link rel="import" href="../bower_components/paper-checkbox/paper-checkbox.html">
+<link rel="import" href="../bower_components/iron-collapse/iron-collapse.html">
+<link rel="import" href="../bower_components/iron-flex-layout/iron-flex-layout.html">
+
+<dom-module id="gm-mappu-postgismanager">
+<style>
+  #layerlist {
+  	overflow: auto;
+  	height: 100%;
+  }
+  
+  .layer {
+  	cursor: pointer;
+  	padding: 2px;
+  }
+</style> 
+<template>
+<iron-ajax
+	auto
+	url="{{capabilitiesurl}}"
+	id="getLayers"
+	verbose="true"
+	handle-as="json"
+	last-response="{{layers}}"
+	on-error="handleError"
+></iron-ajax>
+
+<iron-ajax
+	auto
+	url="{{layerurl}}"
+	id="getLayers"
+	verbose="true"
+	handle-as="json"
+	last-response="{{tabledata}}"
+	on-error="handleError"
+></iron-ajax>
+
+<paper-dialog id='layerdialog'>
+	<h2>Add layer</h2>
+	<paper-dialog-scrollable>
+		<paper-dropdown-menu label="Style" value="{{style}}">
+			<paper-listbox class="dropdown-content">
+				<paper-item>Single</paper-item>
+				<paper-item>Categorized</paper-item>
+				<paper-item>Graduated</paper-item>
+			</paper-listbox>
+		</paper-dropdown-menu>
+		<paper-dropdown-menu label="Column" value="{{stylecol}}">
+			<paper-listbox class="dropdown-content">
+				<template is='dom-repeat' items='{{tabledata.data}}' filter="{{styleFilter(style)}}">
+					<paper-item>{{item.column_name}}</paper-item> 
+				</template>
+			</paper-listbox>
+		</paper-dropdown-menu>
+		
+  </paper-dialog-scrollable>
+  <div class="buttons">
+    <paper-button dialog-dismiss>Cancel</paper-button>
+    <paper-button dialog-confirm on-click='getLayer'>Add</paper-button>
+  </div>
+</paper-dialog>
+
+<div id="layerlist">
+	<iron-selector id='tableselector' selected="0">
+	<template  is="dom-repeat" items="{{layers.data}}">
+		<div class="layer" on-click='getTabledata'>{{item.table}}</div> 
+	</template>
+	</iron-selector>
+</div>
+</template> 
+</dom-module> 
+<script>
+
+Polymer({
+  is: 'gm-mappu-postgismanager',
+  properties: {
+		url: {
+			type: String
+		},
+		layers: {
+			type: Array,
+			observer: ''
+		},
+		tabledata: {
+			type: Array
+		}
+  },
+  observers: [
+  ],
+  styleFilter: function(style){
+  	if (!style){
+  		return true; //no filter
+  	} else {
+			// return a filter function for the current search string
+			style = style.toLowerCase();
+			return function(item) {
+				switch(style){
+					case 'graduated':
+						return item.udt_name == 'int4'||item.udt_name == 'float8'?true:false;
+						break;
+					case 'categorized':
+						return item.udt_name == 'varchar'?true:false;
+						break;
+					default:
+						return true;
+				};
+			};
+		}
+  },
+  load: function(){
+  	this.capabilitiesurl = this.url + '?request=getCapabilities';
+  },
+  
+  ready: function(){
+  	this.load();
+  },
+  
+  getTabledata: function(e){
+  	this.$.layerdialog.open();
+  	var d = e.model.item;
+  	this.selectedTable = d;
+  	this.layerurl = this.url + '?request=getCapabilities&schema='+d.schema+'&table='+d.table;
+  },
+  
+  getLayer: function(e){
+  	var d = this.selectedTable;
+  	var stylecol = this.stylecol;
+  	var idcol = 'ogc_fid';
+  	switch(this.style){
+  	case 'Graduated':
+  		var scalefunc = d3.scale.linear()
+										.range(['black','grey','steelBlue'])
+										.domain([0,50,100]);
+			break;
+		case 'Categorized':
+			var scalefunc = d3.scale.category20();
+			break;
+		default: 
+  	}
+  	var twkblayer = new d3.mappu.TWKBLayer(d.table,{
+						url: 'http://192.168.40.2:8080/data?',
+						usecache: true,
+						layers: d.schema+'.'+d.table,
+						id_column: idcol,
+						geom_column: d.geomcol,
+						srid: d.srid,
+						attributes: [stylecol],
+						style: {
+							column: stylecol,
+							fill:scalefunc,
+							stroke:scalefunc
+						}
+				});
+  	this.fire('addtwkblayer',twkblayer);
+  },
+  
+  styleme: function(e){
+  	debugger;
+  }
+  
+
+  });
+</script> 

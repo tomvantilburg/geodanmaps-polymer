@@ -9,8 +9,8 @@
  <style>
  	#drawbuttons {
 		position: absolute;
-		right: 10px;
-		top: 10px;
+		right: 0px;
+		top: 0px;
 		z-index: 100;
 	}
 	paper-fab {
@@ -28,8 +28,12 @@
 		cursor: pointer;
 	}
  	.collapse-content {
- 		max-width: 400px;
+ 		margin-right: 50px;
+ 		width: 400px;
+ 		background: white;
+ 		padding: 10px;
  	}
+ 	
  	.layer {
 		border-top: solid 1px rgb(200,200,200);
 		border-bottom: solid 1px white;
@@ -42,17 +46,15 @@
  </style>
  <template>
  	<div id='drawbuttons'>
- 		
- 		<iron-collapse class='collapse-content' id='collapse1'>
+ 		<iron-collapse align='right' class='collapse-content' id='collapse1'>
  			<iron-selector id="icons">
  				<template is="dom-repeat" items="{{iconset}}">
  					<paper-icon-button class="marker" alt="{{item.text}}" value="{{item.url}}" src="{{item.url}}" on-click="startPoint"></paper-icon-button>
  				</template>
  			</iron-selector>
  		</iron-collapse>
- 		
- 		<iron-collapse class='collapse-content' id='collapse2'>
- 			<iron-selector id="lines">
+ 		<iron-collapse align='right' class='collapse-content' id='collapse2'>
+ 			<iron-selector id="lines" align='right'>
  				<template is="dom-repeat" items="{{lineset}}">
  					<svg width="29" height="29" on-click="startLine">
  					<g transform="translate(-27.086869,-417.52882)">
@@ -62,7 +64,7 @@
  			</iron-selector>
  		</iron-collapse>
  		
- 		<iron-collapse class='collapse-content' id='collapse3'>
+ 		<iron-collapse align='right' class='collapse-content' id='collapse3'>
  			<iron-selector id="polygons">
  				<template is="dom-repeat" items="{{polygonset}}">
  					<svg width="29" height="29" on-click="startPolygon">
@@ -77,9 +79,10 @@
 			 <paper-fab mini id="pointfab" style$="color:{{selectedPointColor}}" icon="room" on-click="togglePoints"></paper-fab>
 			 <paper-fab mini id="linefab" style$="color:{{selectedLineColor}}" icon="gesture" on-click="toggleLines"></paper-fab>
 			 <paper-fab mini id="polygonfab" style$="color:{{selectedPolyColor}}" icon="bookmark" on-click="togglePolygons"></paper-fab>
-			 <br>
+			 <br><!--
 			 <paper-fab mini id="editfab" icon="create" on-click="startEdit"></paper-fab>
 			 <paper-fab mini id="deletefab" icon="content-cut" on-click="startRemove"></paper-fab>
+			 -->
 			 <paper-fab mini id="cancelfab" icon="remove-circle-outline" on-click="finish"></paper-fab>
 		 </iron-selector>
  		
@@ -150,7 +153,8 @@ Polymer({
 			.then(function(d){
 				featureReady(d);
 			});
-		this.map.mapdiv.style.cursor = 'url('+style['marker-url']+') 18 20,auto';
+		var url = e.model.item.url;
+		this.map.mapdiv.style.cursor = 'url('+url+') 18 20,auto';
 	},
 	startLine: function(e){
 		var self = this;
@@ -158,9 +162,13 @@ Polymer({
 			self.map.mapdiv.style.cursor = 'auto';
 			feature.style = {
 				fill: 'none',
-				stroke: e.model.item.stroke
+				stroke: e.model.item.stroke,
+				"stroke-width": e.model.item['stroke-width']
 			};
-			for (var attrname in feature.style) { feature.properties[attrname] = feature.style[attrname]; }
+			feature.style = e.model.item;
+			for (var attrname in feature.style) { 
+				feature.properties[attrname] = feature.style[attrname]; 
+			}
 		 	self.store.records({_id:feature.id.toString()}).data('type','feature').data('feature',feature).sync();
 		};
 		this.sketch.finish();
@@ -176,8 +184,10 @@ Polymer({
 			self.map.mapdiv.style.cursor = 'auto';
 			feature.style = {
 				fill: 'none',
-				stroke: e.model.item.stroke
+				stroke: e.model.item.stroke,
+				"stroke-width": e.model.item['stroke-width']
 			};
+			feature.style = e.model.item;
 			for (var attrname in feature.style) { feature.properties[attrname] = feature.style[attrname]; }
 		 	self.store.records({_id:feature.id.toString()}).data('type','feature').data('feature',feature).sync();
 		};
@@ -210,6 +220,9 @@ Polymer({
 	},
         
 	finish: function(){
+		this.$.collapse1.hide();
+		this.$.collapse2.hide();
+		this.$.collapse3.hide();
 		this.sketch.finish();
 	},
 });

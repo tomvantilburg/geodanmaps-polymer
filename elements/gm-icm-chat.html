@@ -1,0 +1,121 @@
+<link rel="import" href="../bower_components/paper-material/paper-material.html">
+<link rel="import" href="../bower_components/iron-flex-layout/iron-flex-layout-classes.html">
+<link rel="import" href="../bower_components/paper-card/paper-card.html">
+<link rel="import" href="../bower_components/paper-input/paper-input.html">
+<link rel="import" href="../bower_components/paper-button/paper-button.html">
+<link rel="import" href="../bower_components/iron-list/iron-list.html">
+<link rel="import" href="../bower_components/iron-icons/maps-icons.html">
+<link rel="import" href="../bower_components/iron-icons/av-icons.html">
+<link rel="import" href="../bower_components/iron-icons/editor-icons.html">
+<link rel="import" href="../bower_components/iron-icons/communication-icons.html">
+<link rel="import" href="../bower_components/iron-icons/notification-icons.html">
+<link rel="import" href="../bower_components/iron-icons/av-icons.html">
+<link rel="import" href="../bower_components/iron-icons/social-icons.html">
+<link rel="import" href="../elements/gm-icm-textbox.html">
+
+<dom-module id="gm-icm-chat">
+<style include="iron-flex iron-flex-alignment">
+<style>
+	
+	.main {
+		height: 100%;
+	}
+	.me {
+		margin: 5px;
+		margin-left: 20px;
+		background: #ecffe8;  
+		width: 80%;
+		font-size: 10pt;
+	}
+	.you {
+		margin: 5px;
+		background: white;  
+		width: 80%;
+		font-size: 10pt;
+	}
+	
+	#newmessage {
+		width: 75%;
+	}
+	
+</style>
+<template>
+	
+	
+ <div class="vertical layout">
+ <h4>Chat</h4>
+		<div class='flex vertical layout list'>
+			<div class='flex'></div>
+			<iron-list id="list" items="[[chatitems]]" as="item">
+				<template>
+					<div>
+						<paper-card class$="{{userclass(item)}}">
+							<div class="card-content">
+								<div><b>{{creator(item)}}</b>: {{item._data.text}}</div>
+							</div>
+						</paper-card>
+						&nbsp;<small>{{updated(item)}}</small>
+					</div>
+					</template>
+			</iron-list>
+		</div>
+		<paper-input id="newmessage" label="Message"></paper-input>
+		<paper-button on-click='send'>Send</paper-button>
+	</div>
+	
+</template>
+</dom-module>
+
+<script>
+Polymer({
+    is: 'gm-icm-chat',
+	properties: {
+		reftime: {
+			value: function(){return new Date().getTime();}
+		},
+		chatitems: {
+			type: Array,
+			value: function(){return [];},
+			observer: '_chatitemsChanged'
+		},
+		store: {
+			type: Object
+		}
+	},
+	observers: [
+		'_dataChanged(data,items)'
+	],
+	ready: function(){
+		
+	},
+	domReady: function(){
+	},
+	updateme: function(a,b,c){
+		this.recentlyChanged = true;
+	},
+	_chatitemsChanged: function(){
+		this.$.list.scrollToIndex(this.chatitems.length-1);
+	},
+	send: function(){
+		var message = this.$.newmessage.value;
+		var r = this.store.records({});
+		r.data({type: 'chat',text: message}).sync();
+	},
+	updated: function(d){
+		return new Date(parseInt(d.updated())).toLocaleString();
+	},
+	creator: function(d){
+		return d.creator()?d.creator().id():'anonymous';
+	},
+	userclass: function(d){
+		if (d.creator() && d.creator().id() && d.creator().id() == this.activeuser.id()){
+			return 'me';
+		}
+		else {
+			return 'you';
+		}
+	}
+});
+</script>
+
+</polymer-element>

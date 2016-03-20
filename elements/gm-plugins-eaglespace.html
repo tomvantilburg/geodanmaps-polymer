@@ -7,6 +7,9 @@
 <link rel="import" href="../bower_components/paper-toggle-button/paper-toggle-button.html">
 <link rel="import" href="../bower_components/paper-toolbar/paper-toolbar.html">
 
+<script src="http://api.tiles.mapbox.com/mapbox.js/plugins/turf/v2.0.0/turf.min.js"></script>
+<script src="../bower_components/proj4/dist/proj4.js"></script>
+
 <dom-module id="gm-plugins-eaglespace">
 <style>
 	collapse-content {
@@ -15,20 +18,59 @@
     .alert {
         color: red;
     }
+   	.intersecting {
+		background: red;
+	}
+
 
 </style>
 	<template>
+		<iron-ajax
+			url="http://sms.geodan.nl/sendsms"
+			params='{"recipient":"31612345678","message":"test","originator":"Eagle"}'
+			id="sendSms"
+			verbose=true
+		></iron-ajax>
 			<paper-toolbar>
 				<div class="title">Tracker</div>
 				<paper-toggle-button on-change="onoff" label="sync"></paper-toggle-button>
 			</paper-toolbar>
 
+			<div id='dashboard'>
+				<paper-card heading="Fences">
+					<div class="card-content">
+						Draw geofences. 
+					</div>
+					<div class="card-actions">
+						<paper-button on-click="drawFence" style="color: green;">
+							Draw
+						</paper-button>
+						<paper-button on-click="clearFences" style="color: red;">
+							Remove
+						</paper-button>
+					</div>
+				</paper-card>
+				<paper-card heading="Alerting">
+					<div class="card-content">
+						Enter a phone number, including intl. code, that will receive an SMS when a vehicle enters a geofence.
+						<paper-input
+							id='telnr' type='number' label="tel. nr." value="{{telnr}}">
+						</paper-input>
+					</div>
+					<div class="card-actions">
+						<paper-toggle-button 
+							checked="{{smsalert}}">Enable</paper-toggle-button>
+					</div>
+				</paper-card>
+			</div>
+			
 			<template is="dom-repeat" items="[[vehicles]]">
-			<paper-icon-item on-click='_goto' >
+			<paper-icon-item on-click='_goto' class$="{{intersects(item.intersects)}}">
                 <iron-icon style='color: orange' icon$="{{_speedClass(item)}}" item-icon></iron-icon>
 				<paper-item-body two-line>
                     <div>Vehicle {{item.id}}</div>
 				    <div secondary>[[item.properties.speed]] km/h</div>
+				    <div secondary>{{intersects(item.intersects)}}</div>
                 </paper-item-body>
 			</paper-icon-item>
 		  </template>
@@ -49,10 +91,15 @@
         vehicles: {
             type: Array,
             value: function(){return [];}
-        }
+        },
+        telnr: {
+			type: Number,
+			value: 31612345678
+		}
 	},
 
     ready: function() {
+    	
 
     },
     _goto: function(e) {
@@ -78,6 +125,29 @@
 	locationsChanged: function(){
 		var self = this;
 	},
+	intersects: function(intersects){
+		return intersects?'intersecting':'outside';
+	},
+	drawFence: function(){
+		var style = {
+			stroke: "red",
+			fill: "none",
+			"stroke-width":"2px"
+		};
+		var self = this;
+		var sketch = this.map.sketch;
+		var featureReady = function(feature){
+			self.map.mapdiv.style.cursor = 'auto';
+			feature.style = style;
+			self.fencelayer.addFeature(feature);
+		};
+		sketch.finish();
+		sketch.draw('Polygon').then(featureReady);
+		this.map.mapdiv.style.cursor = 'crosshair';
+	},
+	clearFences: function(){
+		this.fencelayer.data = [];
+	},
 	parseTime: function(t){
 		return new Date(t * 1000).toLocaleString();
 	},
@@ -92,9 +162,34 @@
 	enable: function(){
 		var self = this;
 		var map = this.map;
-		this.layer = new d3.mappu.VectorLayer('voertuigen', {
+		
+		this.fencelayer = new d3.mappu.VectorLayer('Geo-Fences', {
+				reproject: true,
+				style: {
+					stroke: 'red',
+					fill: 'none'
+				}
+		}).addTo(map);
+		
+		this.controllayer = new d3.mappu.VectorLayer('Control', {
 			reproject: true,
-            duration: 500,
+            duration: 1000,
+			style: {
+				stroke: 'none',
+				fill: 'blue'
+			}
+		}).addTo(map);
+		this.trackhistlayer = new d3.mappu.VectorLayer('Track history', {
+			reproject: true,
+			style: {
+				stroke: 'none',
+				fill: 'grey'
+			}
+		}).addTo(map);
+            
+		this.layer = new d3.mappu.VectorLayer('Vehicles', {
+			reproject: true,
+            duration: 1000,
 			style: {
 				stroke: 'none',
 				fill: 'blue'
@@ -121,7 +216,7 @@
 			 }
 			}]
 		}).addTo(map);
-
+		
         //haversine from http://www.movable-type.co.uk/scripts/latlong.html
         /** Converts numeric degrees to radians */
         if (typeof(Number.prototype.toRadians) === "undefined") {
@@ -138,28 +233,15 @@
 
         var haversine = function(point1, point2){
             if (!point2){return {distance: null,bearing: null};};
-            var φ1=point1[0];
-            var φ2=point2[0];
-            var λ1=point1[1];
-            var λ2=point2[1];
-            var R = 6371000; // metres
-            var φ1 = φ1.toRadians();
-            var φ2 = φ2.toRadians();
-            var Δφ = (φ2-φ1).toRadians();
-            var Δλ = (λ2-λ1).toRadians();
-
-            var y = Math.sin(λ2-λ1) * Math.cos(φ2);
-            var x = Math.cos(φ1)*Math.sin(φ2) -
-            Math.sin(φ1)*Math.cos(φ2)*Math.cos(λ2-λ1);
-            var brng = Math.atan2(y, x).toDegrees();
-
-            var a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
-                    Math.cos(φ1) * Math.cos(φ2) *
-                    Math.sin(Δλ/2) * Math.sin(Δλ/2);
-            var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-
-            var d = R * c;
-            return {distance: d,bearing: brng};
+            var toRD = "+proj=sterea +lat_0=52.15616055555555 +lon_0=5.38763888888889 +k=0.999908 +x_0=155000 +y_0=463000 +ellps=bessel +units=m +towgs84=565.2369,50.0087,465.658,-0.406857330322398,0.350732676542563,-1.8703473836068,4.0812 +no_defs <>";
+			var from_rd = proj4(toRD, point2); 
+			var to_rd = proj4(toRD, point1);
+			//console.log('from: ',camcoords_rd, 'to: ',coords_rd);
+			var dx = to_rd[0] - from_rd[0];
+			var dy = to_rd[1] - from_rd[1];
+			var distance = Math.abs(Math.hypot(dy, dx));
+			var bearing = Math.atan2(dx,dy) * 180 / Math.PI;
+            return {distance: distance,bearing: bearing};
         }
 
         var loadtrack = function(fileloc,trackid){
@@ -178,6 +260,11 @@
                         d.properties.bearing = Math.round(distbear.bearing);//degrees
                         d.properties.tdiff = (new Date(d.properties.time) - new Date(oldtime))/1000; //in seconds
                         d.properties.speed = Math.round(d.properties.distance / d.properties.tdiff) * 3.6;
+                        d.style = {
+                        	'marker-url':'../demos/assets/arrow-up.png',
+                        	rotate: d.properties.bearing
+                        };
+				
                         oldtime = d.properties.time;
                         oldpoint = d.geometry.coordinates;
                     });
@@ -206,6 +293,7 @@
 
 		this.interval = setInterval(function(){
             var features = [];
+            var history = [];
             self.tracks.forEach(function(v){
                 var feature = v.filter(function(d){
                     return d.properties.T > counter
@@ -214,11 +302,61 @@
                 if (feature){
                     features = features.concat(feature);
                 }
+                //get track history
+                var colorscale = d3.scale.linear().range(['orange','gray','darkgray']).domain([0,120000,1000000000]);
+                var trackhist = v.filter(function(d){
+                    return  d.properties.T < counter;
+                }).map(function(d){
+                	d.id = d.properties.name + d.properties.T;
+                	d.style = {fill: colorscale(counter - d.properties.T)};
+                	return d;
+                });
+                
+                history = history.concat(trackhist);
+                
+                
             });
+            //Check for intersection
+            features.forEach(function(feature){
+				var intersects = null;
+				self.fencelayer.data.forEach(function(poly){
+					var isInside1 = turf.inside(feature, poly);
+					if (isInside1){
+						intersects = poly.id;
+					}
+				});
+				if (feature.intersects != intersects){
+					if (self.smsalert && !intersects){
+						self.$.sendSms.params.message = 'Vehicle '+feature.id+' left zone ' + feature.intersects;
+						self.$.sendSms.params.recipient = self.telnr;
+						/*DANGER ZONE*/
+						//self.$.sendSms.generateRequest();
+						console.warn(self.$.sendSms.params.message,self.telnr);
+					}
+					//only change intersection status after exit message
+					feature.intersects = intersects;
+					if (self.smsalert && intersects){
+						self.$.sendSms.params.message = 'Vehicle '+feature.id+' entered zone ' + feature.intersects;
+						self.$.sendSms.params.recipient = self.telnr;
+						/*DANGER ZONE*/
+						//self.$.sendSms.generateRequest();
+						console.warn(self.$.sendSms.params.message,self.telnr);
+					}
+				}
+				self.set('routes.'+feature.id+'.intersects',intersects);
+				
+				
+            });
+            self.controllayer.data = features.map(function(d){
+            		d = JSON.parse(JSON.stringify(d));
+            		d.style['marker-url'] = null;
+            		return d;
+            });
+            self.trackhistlayer.data = history;
             self.layer.data = features;
             self.vehicles = features;
-            counter+=500;
-		},500);
+            counter+=10000;
+		},1000);
 
 
 	}

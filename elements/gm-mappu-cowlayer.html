@@ -1,5 +1,12 @@
 <link rel="import"
       href="../bower_components/polymer/polymer.html">
+<link rel="import" href="../bower_components/iron-icons/editor-icons.html">
+<link rel="import" href="../bower_components/iron-icons/image-icons.html">
+<link rel="import" href="../bower_components/iron-icons/iron-icons.html">
+<script src="../bower_components/proj4/dist/proj4.js"></script>
+<script src="../bower_components/terraformer/terraformer.min.js"></script>
+<script src="../bower_components/terraformer-wkt-parser/terraformer-wkt-parser.min.js"></script>
+
 <dom-module id="gm-mappu-cowlayer">
 <style>
 	
@@ -25,13 +32,18 @@
 		layer: {
 			type: Object,
 			notify: true
+		},
+		icons: {
+			type: Array,
+			value: function(){return [];},
+			observer: '_reload'
 		}
 	},
 	
     _mapChanged: function() {
 		var self = this;
 		var map = this.map;
-		this.layer = new d3.mappu.VectorLayer('cow',{
+		this.layer = new d3.mappu.VectorLayer('Draw',{
     		reproject: true,
     		style: {
     			'fill-opacity': 0.5
@@ -60,6 +72,25 @@
 							})
 							.html(d.properties.label);
 						
+					}
+					var populator = function(e){
+						var populatorCallback = function(x){
+							var aantal = x.data.aantal_won;
+							d.properties.label = "aantal inwoners: " + aantal;
+							self.fire('changeFeature', d);
+						}
+	
+						d3.event.stopPropagation();
+						d3.select(self.map.mapdiv).selectAll('.menu').remove();
+						//Prepare geometry
+						var toproj = proj4.Proj('+proj=sterea +lat_0=52.15616055555555 +lon_0=5.38763888888889 +k=0.999908 +x_0=155000 +y_0=463000 +ellps=bessel +units=m +towgs84=565.2369,50.0087,465.658,-0.406857330322398,0.350732676542563,-1.8703473836068,4.0812 +no_defs ');
+						var geojson = JSON.parse(JSON.stringify(d)); //Clone object
+						Terraformer.Tools.applyConverter(geojson, function(coordinate){
+							return proj4(toproj,coordinate);
+						});
+						var geom = Terraformer.WKT.convert(geojson.geometry);
+						var url = './data/populator.php';
+						d3.json(url+'?geom='+JSON.stringify(geojson.geometry),populatorCallback);
 					}
 					var offset = 30;
 					d3.select(self.map.mapdiv).selectAll('.menu').remove();
@@ -115,6 +146,44 @@
 						.transition()
 						.style('left', location[0] - offset + 'px')
 						.style('top', location[1] - offset + 'px');
+						//populator
+						if (d.geometry.type == 'Polygon'){
+						d3.select(self.map.mapdiv).append('paper-fab')
+							.classed('menu', true)
+							.on('click',populator)
+							.attr('icon', 'social:people')
+							.attr('mini', 'true')
+							.style('position', 'absolute')
+							.style('left', location[0] + 'px')
+							.style('top', location[1] + 'px')
+							.style('background', 'steelblue')
+							.transition()
+							.style('left', location[0] - offset + 'px')
+							.style('top', location[1] + offset + 'px');
+						}
+						/*
+					//Cambait
+					if (d.geometry.type == 'Point'){
+						d3.select(self.map.mapdiv).append('paper-fab')
+							.classed('menu', true)
+							.on('click',function(){
+									//add cambait
+									var properties = d.properties || {};
+									properties.cambait = true;
+									d.properties = properties;
+									self.store.records(d.id.toString()).data('feature',d).sync();
+							})
+							.attr('icon', 'image:remove-red-eye')
+							.attr('mini', 'true')
+							.style('position', 'absolute')
+							.style('left', location[0] + 'px')
+							.style('top', location[1] + 'px')
+							.style('background', 'green')
+							.transition()
+							.style('left', location[0] - offset + 'px')
+							.style('top', location[1] + offset + 'px');
+						}
+					*/
 					d3.select(self.map.mapdiv).on('click', function(){
 						d3.select(self.map.mapdiv).selectAll('.menu').remove();
 					});
@@ -122,22 +191,39 @@
 			}]
 		 })
 		 .addTo(this.map);
-		 
-		 
-		 
-		 
 	},
 	_reload: function(){
+		var self = this;
 		if (this.features){//TODO
 			this.layer.data = this.features.map(function(d){
 				//copy stype from properties to be in line with EagleWater
 				var feat = d.data('feature');
 				feat.id = d.id();
-				feat.style = feat.properties;
+				if (!feat.properties){
+					feat.properties = {};
+				}
+				if (!feat.style){
+					feat.style = feat.properties;
+				}
+				
+				//prepare binary icons
+				if (d.data('iconref')){
+					//TODO: put binary dat in marker-url
+					var icon = self.icons.filter(function(i){
+							return i.id() == d.data('iconref');
+					})[0];
+					//data:image/png;base64,
+					if (icon){
+						feat.style['marker-url'] = 'data:'+icon.data('encoding') + ';base64,' + icon.data('base64');
+					}
+				}
+				
 				return feat;
 			});
+			this.layer.draw(true); //rebuild features
 		}
-	},
+	
+	}
   });
 </script>
 </dom-module>
