@@ -1,0 +1,164 @@
+<link rel="import" href="../bower_components/polymer/polymer.html">
+<link rel="import" href="../bower_components/paper-card/paper-card.html">
+<link rel="import" href="../bower_components/paper-material/paper-material.html">
+<link rel="import" href="../bower_components/paper-input/paper-textarea.html">
+<link rel="import" href="../bower_components/iron-icons/iron-icons.html">
+<link rel="import" href="../bower_components/iron-icons/hardware-icons.html">
+<link rel="import" href="../bower_components/paper-item/paper-icon-item.html">
+<link rel="import" href="../bower_components/paper-icon-button/paper-icon-button.html">
+<link rel="import" href="../bower_components/paper-slider/paper-slider.html">
+<link rel="import" href="../bower_components/paper-toggle-button/paper-toggle-button.html">
+<link rel="import" href="../bower_components/paper-checkbox/paper-checkbox.html">
+<link rel="import" href="../bower_components/iron-collapse/iron-collapse.html">
+<link rel="import" href="../bower_components/iron-flex-layout/iron-flex-layout.html">
+
+<dom-module id="gm-mappu-layercard">
+<style include="iron-flex iron-flex-alignment">
+<style>
+
+  iron-collapse {
+      margin-left: 1px;
+      margin-right: 1px;
+      cursor: move;
+  }
+
+  paper-card {
+      display: block;
+      margin-bottom: 5px;
+      min-width: 250px;
+  }
+  .card-actions {
+    padding-bottom: 10px;
+  }
+  .layer {
+      cursor: pointer;
+  }
+  .removeLayer {
+      color: red;
+      cursor: pointer;
+  }
+  .legendImg, .transparent {
+      padding: 5px 5px 5px 15px;
+  }
+  .legendImg {
+      font-weight: 500;
+  }
+  .zoomin .legendImg {
+      border: red solid 1px;
+  }
+
+  iron-collapse {
+      background: rgba(225,225,230,0.4);
+      -webkit-box-shadow: inset 0px 2px 5px 0px rgba(161,161,161,0.62);
+      -moz-box-shadow: inset 0px 2px 5px 0px rgba(161,161,161,0.62);
+      box-shadow: inset 0px 2px 5px 0px rgba(161,161,161,0.62);
+      margin-left: 1px;
+      margin-right: 1px;
+  }
+
+</style>
+<template>
+    <paper-card class="white">
+      <div class="card-content">
+          <paper-checkbox checked="{{layer.visible}}" style="padding:20px"></paper-checkbox>
+          {{layer.name}}
+          <paper-icon-button icon="hardware:keyboard-arrow-up" title="more info" on-click="_toggle" style="float:right;">
+          </paper-icon-button>
+      </div>
+      <div class="card-actions">
+          <iron-collapse id="moreinfo" style="width:100%;">
+            <paper-slider min="0" max="1" step="0.01" value="1" immediatevalue="{{layer.opacity}}" on-value-change="setOpacity" title="Schuif om de transparantie van de laag in te stellen"></paper-slider>
+              <template is="dom-if" if="{{layer.options.legendUrl}}">
+                <div class="legendImg" draggable="false">
+                  <img src="{{layer.options.legendUrl}}"/>
+                </div>
+              </template>
+
+            <div class="layout horizontal">
+              <paper-button class="removeLayer" on-click="removeLayer">verwijder laag</paper-button>
+            </div>
+        </iron-collapse>
+      </div>
+    </paper-card>
+
+<!--
+    <div class="layer">
+      <paper-material class="layer">
+          <div class="layout horizontal">
+            <paper-checkbox checked="{{layer.visible}}" style="padding:20px"></paper-checkbox>
+            <div class="flex">
+              {{layer.name}}
+            </div>
+            <paper-icon-button toggles active='{{layer.toggled}}' icon="menu" style="padding:20px"></paper-icon-button>
+          </div>
+          <iron-collapse class="collapse-content" opened="{{layer.toggled}}">
+              <paper-slider min="0" max="1" step="0.01" value="1" immediatevalue="{{layer.opacity}}" on-value-change="setOpacity" title="Schuif om de transparantie van de laag in te stellen"></paper-slider>
+                <template is="dom-if" if="{{layer.options.legendUrl}}">
+                  <div class="legendImg" draggable="false">
+                    <img src="{{layer.options.legendUrl}}"/>
+                  </div>
+                </template>
+
+              <template is="dom-if" if="{{layer.iswms}}">
+              <paper-textarea label="CQL filter"></paper-textarea>
+              <paper-button on-click="_applycql">Toepassen</paper-button>
+              </template>
+
+              <div class="layout horizontal">
+                <paper-button class="removeLayer" on-click="removeLayer">verwijder laag</paper-button>
+              </div>
+          </iron-collapse>
+      </paper-material>
+    </div>
+-->
+</template>
+
+</dom-module>
+<script>
+
+  Polymer({
+  is: 'gm-mappu-layercard',
+  properties: {
+      layer: Object
+  },
+  observers: [
+  ],
+  //Reorder the layers after dragging them
+  ready: function(){
+  },
+  _applycql: function(e){
+		var layer = this.layer;
+		var cql = e.target.previousElementSibling.value;
+		if (cql){
+			layer.cql_filter = cql;
+			//TODO: move this to mappu functionaliteit
+			layer.drawboard.selectAll('.tile').remove();
+			layer.draw();
+		}
+  },
+  removeLayer: function(){
+		var layer = this.layer;
+		var index = this.map.layers.indexOf(layer);
+		if (index > -1) {
+			//Pff, annoying. Because the dom-repeat wants it's own splicing method
+			//(otherwhise it doesn't refresh) we have to make a d-tour.
+			this.splice('reverselayers',this.map.layers.length - index, 1);
+		}
+		this.map.removeLayer(layer);
+  },
+  setOpacity: function(e){
+		var opacity = e.target.value;
+        if (this.layer){
+    		this.layer.opacity = opacity;
+    		//this.map.redraw();
+        }
+	},
+    _toggle: function(e) {
+      var moreInfo = this.$.moreinfo;
+      var iconButton = e.target;
+      iconButton.icon = moreInfo.opened ? 'hardware:keyboard-arrow-up'
+                                        : 'hardware:keyboard-arrow-down';
+      moreInfo.toggle();
+    }
+  });
+</script>

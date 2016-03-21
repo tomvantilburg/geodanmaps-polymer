@@ -1,0 +1,110 @@
+<link rel="import"
+      href="../bower_components/polymer/polymer.html">
+
+<link rel="import" href="../bower_components/iron-ajax/iron-ajax.html">
+<link rel="import" href="../bower_components/iron-flex-layout/iron-flex-layout.html">
+<link rel="import" href="../bower_components/iron-icons/social-icons.html">
+<link rel="import" href="../bower_components/iron-icons/maps-icons.html">
+<link rel="import" href="../bower_components/iron-icons/editor-icons.html">
+<link rel="import" href="../bower_components/iron-collapse/iron-collapse.html">
+<link rel="import" href="../bower_components/paper-card/paper-card.html">
+<link rel="import" href="../bower_components/paper-listbox/paper-listbox.html">
+<link rel="import" href="../bower_components/paper-item/paper-item.html">
+<link rel="import" href="../bower_components/paper-item/paper-item-body.html">
+<link rel="import" href="../bower_components/paper-item/paper-icon-item.html">
+
+<link rel="import" href="../bower_components/paper-button/paper-button.html">
+<link rel="import" href="../bower_components/paper-input/paper-input.html">
+<link rel="import" href="../bower_components/paper-input/paper-input-container.html">
+<link rel="import" href="../bower_components/paper-toggle-button/paper-toggle-button.html">
+<link rel="import" href="../bower_components/paper-toolbar/paper-toolbar.html">
+
+<dom-module id="gm-plugins-traffic">
+<style>
+	paper-icon-item {
+		cursor: pointer;
+	}
+	text {
+            font: 12px sans-serif;
+	}
+
+</style>
+	<template>
+			<paper-toolbar>
+				<div class="title">Track &amp; Trace</div>
+				<paper-toggle-button on-change="onoff" label="sync"></paper-toggle-button>
+			</paper-toolbar>
+			<template id='list' is="dom-repeat" items="[[routes]]">
+			<paper-icon-item on-click='gotoLocation' class$="{{intersects(item.intersects)}}">
+				<iron-icon icon="maps:directions-car" item-icon></iron-icon>
+					<paper-item-body>Vehicle {{item.id}} {{intersects(item.intersects)}}<br>
+				</paper-item-body>
+			</paper-icon-item>
+		  </template>
+	</template>
+</dom-module>
+
+<script>
+  Polymer({
+    is: "gm-plugins-traffic",
+	properties: {
+
+	},
+
+    ready: function() {
+
+    },
+    gotoLocation: function(e) {
+        var location = e.model.item.curlocation;
+		this.fire('goto-coords',location);
+    },
+	onoff: function(e){
+	    if (e.srcElement.checked){ //ON
+			this.enable();
+		}
+		else { //OFF
+			this.routes = [];
+			this.map.removeLayer(this.layer);
+
+		}
+	},
+	selectionChanged: function(){
+		if (this.selection){
+			this.map.center = this.selection.geometry.coordinates;
+			//this.map.map.zoom = 24; //can't zoom while still centering (bug in mappu)
+		}
+
+	},
+	dropdownToggle: function(e){
+		e.currentTarget.nextElementSibling.toggle();
+	},
+
+
+	enable: function(){
+		var self = this;
+		var map = this.map;
+
+
+		this.layer = new d3.mappu.VectorLayer('trackee', {
+				reproject: true,
+				style: {
+					stroke: 'red',
+					fill: 'red'
+				},
+				labelfield: 'label'
+		}).addTo(map);
+        d3.json('http://opd.it-t.nl/data/amsterdam/ParkingLocation.json', function(e,data){
+            if (e){console.warn(e);}
+            self.layer.data = data;
+        });
+		var to = [5.846063,52.108643];
+		map.center = to;
+		window.setTimeout(function(){ //TODO: we can't zoom and center at the same time
+				map.zoom = 21;
+		},500);
+
+		});
+	}
+  });
+</script>
+</dom-module>
