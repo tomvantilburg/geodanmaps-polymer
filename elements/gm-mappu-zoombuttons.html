@@ -3,18 +3,15 @@
 <link rel="import" href="../bower_components/paper-fab/paper-fab.html">
 <dom-module id="gm-mappu-zoombuttons">
  <style>
- 
+
  #zoombuttons {
-		position: absolute;
-		bottom: 10px;
-		right: 10px;
 		z-index: 1000;
 	}
  paper-fab {
  	 background: gray;
- 	 margin: 5px; 
+ 	 margin: 5px;
  }
- 
+
  </style>
  <template>
  	<div id="zoombuttons">
@@ -22,7 +19,7 @@
  		 <paper-fab mini id="zoomOut" icon="remove" on-click="zoomOut"></paper-fab>
  	</div>
  </template>
- 
+
 </dom-module>
 
 <script>
@@ -42,6 +39,6 @@ Polymer({
     	this.map.zoom--;
     	this.map.redraw();
     }
-    
+
 });
 </script>

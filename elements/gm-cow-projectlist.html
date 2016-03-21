@@ -1,7 +1,8 @@
 <link rel="import" href="../bower_components/polymer/polymer.html">
+<link rel="import" href="../bower_components/paper-material/paper-material.html">
 <link rel="import" href="../bower_components/paper-button/paper-button.html">
 <link rel="import" href="../bower_components/paper-toggle-button/paper-toggle-button.html">
-<link rel="import" href="../bower_components/paper-item/paper-item.html">
+<link rel="import" href="../bower_components/paper-item/paper-icon-item.html">
 <link rel="import" href="../bower_components/paper-item/paper-item-body.html">
 <link rel="import" href="../bower_components/paper-dialog/paper-dialog.html">
 <link rel="import" href="../bower_components/iron-selector/iron-selector.html">
@@ -10,14 +11,31 @@
 
 <dom-module id="gm-cow-projectlist">
  <style>
- paper-item {
+ .item {
+     margin-left: 20px;
  	 cursor: pointer;
+     max-width: 400px;
+     margin-right: 20px;
+ }
+ #addbutton {
+     background: orange;
+     position: fixed;
+     z-index: 10;
+     bottom:20px;
+     right: 20px;
+ }
+ .close{
+     color: red;
+ }
+ .list {
+     position: absolute;
+     height: 92%;
+     overflow: auto;
  }
  </style>
  <template>
-<<<<<<< HEAD
-=======
- <paper-button raised on-click='add'>Nieuw incident</paper-button>
+
+ <paper-fab id='addbutton' icon="add" raised on-click='add'></paper-fab>
  <paper-dialog id='adddialog'>
  	<h2>Nieuw incident</h2>
  	<gm-icm-addincident id='addincident'></gm-icm-addincident>
@@ -26,25 +44,26 @@
  	</div>
  </paper-dialog>
  <br>
->>>>>>> a6ad727e4c228ec94bfe69c3efbcf60b6c522e44
 
+<div class='list'>
  <iron-selector attr-for-selected="id" selected="{{selectedproject}}">
- 	<template is="dom-repeat" items="{{projects}}">
- 		<paper-item id="{{item._id}}">
+ 	<template is="dom-repeat" items="{{projects}}" sort="datesort">
+        <paper-material id="{{item._id}}" class='item'>
+ 		<paper-icon-item>
+            <div class="avatar" item-icon></div>
 			<paper-item-body two-line>
 				<div>{{item._data.name}}</div>
 				<div secondary>{{updated(item)}}</div>
-				<div secondary style="color:red" on-click='remove'>Verwijder</div>
 			</paper-item-body>
-		</paper-item>
+            <paper-icon-button class='close' icon="close" alt="Sluit incident" on-click='remove'>
+            </paper-icon-button>
+		</paper-icon-item>
+    </paper-material>
 	</template>
  </iron-selector>
-
+</div>
  </template>
-<<<<<<< HEAD
 
-=======
->>>>>>> a6ad727e4c228ec94bfe69c3efbcf60b6c522e44
 </dom-module>
 
 <script>
@@ -66,10 +85,22 @@ Polymer({
 		});
 	},
 	updated: function(d){
-		var date = new Date(parseInt(d.updated())).toLocaleString();
-		var creator = d.creator()?d.creator().data('name'):'unknown'; 
-		return date + ' (by: ' + creator + ')';
+        var displayDate;
+        var date = new Date(parseInt(d.updated()));
+        var now = new Date();
+        var todayAtMidn = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        if (date < todayAtMidn) {
+            displayDate = date.toLocaleDateString();
+        } else {
+            displayDate = date.toLocaleTimeString();
+        }
+
+		var creator = d.creator()?d.creator().data('name'):'unknown';
+		return displayDate + ' (by: ' + creator + ')';
 	},
+    datesort: function(a,b){
+        return b.updated() - a.updated();
+    },
 	add: function(){
 		this.$.adddialog.open();
 		this.$.addincident.activate();//TODO
@@ -82,7 +113,7 @@ Polymer({
 		} else {
 			// do nothing
 		}
-		
+
 	}
 
 });

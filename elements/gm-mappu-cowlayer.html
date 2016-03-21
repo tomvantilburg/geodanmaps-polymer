@@ -9,13 +9,13 @@
 
 <dom-module id="gm-mappu-cowlayer">
 <style>
-	
+
 </style>
 	<template>
 
 	</template>
 </dom-module>
-	
+
 <script>
   Polymer({
     is: "gm-mappu-cowlayer",
@@ -39,14 +39,14 @@
 			observer: '_reload'
 		}
 	},
-	
+
     _mapChanged: function() {
 		var self = this;
 		var map = this.map;
 		this.layer = new d3.mappu.VectorLayer('Draw',{
     		reproject: true,
     		style: {
-    			'fill-opacity': 0.5
+    			'fill-opacity': 0.2
     		},
 			labelfield: 'label',
 			events: [{
@@ -71,7 +71,7 @@
 								self.fire('featureChanged', d);
 							})
 							.html(d.properties.label);
-						
+
 					}
 					var populator = function(e){
 						var populatorCallback = function(x){
@@ -79,7 +79,7 @@
 							d.properties.label = "aantal inwoners: " + aantal;
 							self.fire('changeFeature', d);
 						}
-	
+
 						d3.event.stopPropagation();
 						d3.select(self.map.mapdiv).selectAll('.menu').remove();
 						//Prepare geometry
@@ -115,7 +115,7 @@
 						.transition()
 						.style('left', location[0] + offset + 'px')
 						.style('top', location[1] + offset + 'px')
-					//Remove	
+					//Remove
 					d3.select(self.map.mapdiv).append('paper-fab')
 						.classed('menu', true)
 						.on('click', function(){
@@ -195,7 +195,30 @@
 	_reload: function(){
 		var self = this;
 		if (this.features){//TODO
-			this.layer.data = this.features.map(function(d){
+            //Make sure that the polygons get on the bottom
+            var mapped = this.features.map(function(f, i) {
+                switch (f.data('feature').geometry.type.toLowerCase()){
+                    case 'point':
+                        return { index: i, value: 3 };
+                    case 'linestring':
+                        return { index: i, value: 2 };
+                    case 'polygon':
+                        return { index: i, value: 1 };
+                    default:
+                        return { index: i, value: 0 };
+                }
+            });
+
+            // sorting the mapped array containing the reduced values
+            mapped.sort(function(a, b) {
+              return +(a.value > b.value) || +(a.value === b.value) - 1;
+            });
+
+            // container for the resulting order
+            var sortedfeatures = mapped.map(function(f){
+              return self.features[f.index];
+            });
+			this.layer.data = sortedfeatures.map(function(d){
 				//copy stype from properties to be in line with EagleWater
 				var feat = d.data('feature');
 				feat.id = d.id();
@@ -205,7 +228,7 @@
 				if (!feat.style){
 					feat.style = feat.properties;
 				}
-				
+
 				//prepare binary icons
 				if (d.data('iconref')){
 					//TODO: put binary dat in marker-url
@@ -217,12 +240,12 @@
 						feat.style['marker-url'] = 'data:'+icon.data('encoding') + ';base64,' + icon.data('base64');
 					}
 				}
-				
+
 				return feat;
 			});
 			this.layer.draw(true); //rebuild features
 		}
-	
+
 	}
   });
 </script>

@@ -1,8 +1,8 @@
 <link rel="import" href="../bower_components/paper-material/paper-material.html">
 <link rel="import" href="../bower_components/iron-flex-layout/iron-flex-layout-classes.html">
 <link rel="import" href="../bower_components/paper-card/paper-card.html">
-<link rel="import" href="../bower_components/paper-input/paper-input.html">
-<link rel="import" href="../bower_components/paper-button/paper-button.html">
+<link rel="import" href="../bower_components/paper-input/paper-textarea.html">
+<link rel="import" href="../bower_components/paper-icon-button/paper-icon-button.html">
 <link rel="import" href="../bower_components/iron-list/iron-list.html">
 <link rel="import" href="../bower_components/iron-icons/maps-icons.html">
 <link rel="import" href="../bower_components/iron-icons/av-icons.html">
@@ -16,53 +16,73 @@
 <dom-module id="gm-icm-chat">
 <style include="iron-flex iron-flex-alignment">
 <style>
-	
-	.main {
-		height: 100%;
+	:host {
+        @apply(--layout-fit);
+        @apply(--layout-vertical);
+      }
+	.container {
+		@apply(--layout-flex);
+		@apply(--layout-vertical);
+		overflow: hidden;
+		height: 92%;
 	}
+
 	.me {
 		margin: 5px;
 		margin-left: 20px;
-		background: #ecffe8;  
+		background: #ecffe8;
 		width: 80%;
 		font-size: 10pt;
 	}
 	.you {
 		margin: 5px;
-		background: white;  
+		background: white;
 		width: 80%;
 		font-size: 10pt;
 	}
-	
+	.small {
+		font-size: 8pt;
+		color: grey;
+	}
+
 	#newmessage {
 		width: 75%;
 	}
-	
+	#sendbutton {
+		color: orange;
+	}
+	#list{
+		 @apply(--layout-flex);
+	}
+	.sendcontainer {
+		@apply(--layout-horizontal);
+      	@apply(--layout-end);
+		padding: 5px;
+  	}
+
 </style>
 <template>
-	
-	
- <div class="vertical layout">
- <h4>Chat</h4>
-		<div class='flex vertical layout list'>
-			<div class='flex'></div>
-			<iron-list id="list" items="[[chatitems]]" as="item">
-				<template>
-					<div>
-						<paper-card class$="{{userclass(item)}}">
-							<div class="card-content">
-								<div><b>{{creator(item)}}</b>: {{item._data.text}}</div>
-							</div>
-						</paper-card>
-						&nbsp;<small>{{updated(item)}}</small>
-					</div>
-					</template>
-			</iron-list>
-		</div>
-		<paper-input id="newmessage" label="Message"></paper-input>
-		<paper-button on-click='send'>Send</paper-button>
+
+
+ <div class="container">
+		<iron-list id="list" items="[[chatitems]]" as="item">
+			<template>
+				<div>
+					<paper-card class$="{{userclass(item)}}">
+						<div class="card-content">
+							<div><b>{{creator(item)}}</b>: {{item._data.text}}</div>
+							<div class='small'>{{updated(item)}}</div>
+						</div>
+					</paper-card>
+
+				</div>
+				</template>
+		</iron-list>
+	<div class='sendcontainer'>
+		<paper-textarea class='flex' id="newmessage" label="Tik hier..." rows='4' max-rows='4'></paper-textarea>
+		<paper-icon-button id='sendbutton' icon="send" on-click='send'></paper-icon-button>
 	</div>
-	
+</div>
 </template>
 </dom-module>
 
@@ -86,7 +106,7 @@ Polymer({
 		'_dataChanged(data,items)'
 	],
 	ready: function(){
-		
+
 	},
 	domReady: function(){
 	},
@@ -94,12 +114,14 @@ Polymer({
 		this.recentlyChanged = true;
 	},
 	_chatitemsChanged: function(){
-		this.$.list.scrollToIndex(this.chatitems.length-1);
+		this.$.list.scrollToIndex(this.chatitems.length);
+		this.$.list.fire('resize');
 	},
 	send: function(){
 		var message = this.$.newmessage.value;
 		var r = this.store.records({});
 		r.data({type: 'chat',text: message}).sync();
+		this.$.newmessage.value = '';
 	},
 	updated: function(d){
 		return new Date(parseInt(d.updated())).toLocaleString();
