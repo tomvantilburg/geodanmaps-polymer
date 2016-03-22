@@ -44,6 +44,10 @@
 		font-size: 8pt;
 		color: grey;
 	}
+	.tags {
+		font-size: 8pt;
+		color: orange;
+	}
 
 	#newmessage {
 		width: 75%;
@@ -71,6 +75,9 @@
 					<paper-card class$="{{userclass(item)}}">
 						<div class="card-content">
 							<div><b>{{creator(item)}}</b>: {{item._data.text}}</div>
+							<template is='dom-repeat' items='{{tags(item._data.text)}}'>
+								<span class='tags' on-click='goto' value='{{item}}'>{{item}}</span>
+							</template>
 							<div class='small'>{{updated(item)}}</div>
 						</div>
 					</paper-card>
@@ -136,6 +143,13 @@ Polymer({
 		else {
 			return 'you';
 		}
+	},
+	tags: function(text){
+		return text.split(' ').filter(d=>d.match('#'));
+	},
+	goto: function(event){
+		event.stopPropagation();
+		this.fire('goto-location',{text:event.target.value.replace('#','')});
 	}
 });
 </script>

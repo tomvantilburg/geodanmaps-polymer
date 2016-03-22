@@ -309,10 +309,13 @@ Polymer({
     	this.addEventListener('newincident',function(e){
 				var name = e.detail.msg.name;
 				var project = this.core.projects({});
+				var center = e.detail.msg.center;
+				var zoom = e.detail.msg.zoom;
 				project.data('name', name)
 					.data('status','Actief')
 					.data('type', 'Geofort')
-					.data('location',{lat: 51.881892, lon: 5.110007, zoomlevel: 20})
+					.data('location',{lat: center[1], lon: center[0], zoomlevel: zoom})
+					//.data('location',{lat: 51.881892, lon: 5.110007, zoomlevel: 20})
 					.data('teams',[
 						{id: 1, name: 'Incident', boxes: [
 								{id: 1, type: 'text', name: 'Meldingen'}
@@ -381,12 +384,20 @@ Polymer({
     	},{
     		id: 'Communicatie',
     		text: 'U gaat zorgen dat alle teams met elkaar blijven comminiceren en uiteindelijk geeft u een samenvatting aan de burgemeester.'
-    	}];
+    	},{
+			id: 'Dijkwacht',
+			text: 'Controleteam'
+		}];
     },
     _projectChanged: function(){
     	this.selected = 'main';
-    	this.map.center = [5.125256,51.865732];
-    	this.map.redraw();
+		var location = this.curproject.data('location');
+    	this.map.center = [location.lon,location.lat];
+		var self = this;
+		setTimeout(function(){
+			self.map.zoom = location.zoomlevel;
+    		self.map.redraw();
+		},500);
     },
     _teamChanged: function(team){
     	//Spoofin an account for cow-connector
@@ -423,7 +434,7 @@ Polymer({
 		});
 		if (items[0]){
 			var feature = items[0].data('feature');
-			this.$.textmap.cowlayer.zoomToFeature(feature);
+			this.$.cowlayer.layer.zoomToFeature(feature);
 		}
 		else {
 			console.log('no location found');
