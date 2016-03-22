@@ -38,9 +38,7 @@
 
 <style is='custom-style'>
 
-	.menu {
-		cursor: pointer;
-	}
+
 
 	.accounting {
 		background: #3f51b5;
@@ -68,6 +66,17 @@
 	#togglelayers active {
 	    background: orange;
 	}
+	#togglechat {
+		position: absolute;
+		background: gray;
+		margin: 5px;
+		right: 0px;
+		top: 300px;
+		z-index: 10001;
+	}
+	togglechat active {
+		background: orange;
+	}
 	#zoombuttons{
 		position: absolute;
 		bottom: 10px;
@@ -93,13 +102,14 @@
 	.teamcard {
 		cursor: pointer;
 		margin-top: 10px;
-		margin-left: 20%;
-
+		display: block;
 	}
 	.teamcard:hover {
 		background: steelBlue;
 	}
-
+	paper-item.menuitem {
+		cursor: pointer;
+	}
 
 
 </style>
@@ -132,6 +142,17 @@
 		data="{{textdata}}"
 		></gm-cow-text>
 	-->
+
+	<paper-dialog id='infodialog'>
+	  <h2>Informatie</h2>
+	  <paper-dialog-scrollable>
+	    Hier komt de informatieve tekst die hoort bij het scenario
+	  </paper-dialog-scrollable>
+	  <div class="buttons">
+	    <paper-button dialog-confirm>OK</paper-button>
+	  </div>
+	</paper-dialog>
+
 	<paper-drawer-panel id='drawerpanel'>
 	 <!-- MENU -->
 	 <paper-header-panel mode="seamed" drawer>
@@ -142,12 +163,12 @@
 			<div class='accounting'>
 			</div>
 			<iron-selector attr-for-selected="name" selected="{{selected}}">
-				<paper-item class='menu' name='users'>Team</paper-item>
+				<paper-item class='menuitem' name='users'>Team</paper-item>
 				<template is="dom-if" if="[[account]]">
-					<paper-item class='menu' name='projects'>Incident</paper-item>
+					<paper-item class='menuitem' name='projects'>Incident</paper-item>
 				</template>
 				<template is="dom-if" if="[[curproject]]">
-					<paper-item class='menu' name='main'>Kaart</paper-item>
+					<paper-item class='menuitem' name='main'>Kaart</paper-item>
 				</template>
 			</iron-selector>
 
@@ -157,24 +178,36 @@
     <paper-header-panel main>
     	<paper-toolbar>
     		<paper-icon-button icon="menu" paper-drawer-toggle></paper-icon-button>
-    		<div class='title'>Team: {{account.id}} / {{curproject._data.name}}</div>
+    		<span class='title'>Team: {{account.id}} / {{curproject._data.name}}</span>
+			<paper-icon-button icon='info' on-click='_toggleinfodialog'></paper-icon-button>
     	</paper-toolbar>
 		<div class="fit">
 		<iron-pages attr-for-selected="name" selected="{{selected}}">
 
-			<div name='users'>
+			<div name='users' class='layout vertical'>
 			 <iron-selector selected="{{selectedteam}}">
 				<template is='dom-repeat' items='[[teams]]'>
 					<paper-card class='teamcard' heading="{{item.id}}">
 						<div class="card-content">{{item.text}}</div>
-					</paper-card><br>
+					</paper-card>
 				</template>
 				</iron-selector>
 			</div>
 
 			<gm-cow-projectlist name='projects' projects="{{projects}}"
 				selectedproject="{{selectedproject}}"></gm-cow-projectlist>
-			<div name='main' class='layout horizontal'>
+			<!--<div name='main' class='layout horizontal'>-->
+			<paper-drawer-panel name='main' id='mainpanel' right-drawer disable-swipe drawer-width="300" drawerToggleAttribute='paper-drawer-toggle1'>
+				<div drawer>
+					<gm-icm-chat id="eaglechat"
+						chatitems="{{chatitems}}"
+						store="{{itemstore}}"
+						activeuser="{{activeuser}}"
+						on-goto-location="gotolocation">
+			 		</gm-icm-chat>
+				</div>
+
+
 				<!-- No text needed for geofort
 				<gm-icm-text id="eagletext"
 					itemconfig="{{itemconfig}}"
@@ -187,7 +220,7 @@
 				-->
 
 
-
+				<div main>
 				<gm-mappu-map class='flex' id='mapelement' map="[[map]]">
 					<gm-geosearch></gm-geosearch>
 					<iron-collapse id="layermngr" class='collapse-content' opened='[[layerstoggled]]'>
@@ -200,6 +233,7 @@
 						styleset="{{styleset}}"
 					></gm-mappu-drawbuttons>
 					<paper-fab mini id='togglelayers' toggles icon="menu" active='{{layerstoggled}}'></paper-fab>
+					<paper-fab mini id='togglechat' toggles icon="send" active='{{chattoggled}}' paper-drawer-toggle1></paper-fab>
 					<gm-mappu-stylesets styleset1="{{styleset}}"></gm-mappu-stylesets>
 					<gm-mappu-cowlayer
 						id="cowlayer"
@@ -209,12 +243,6 @@
 						layer="{{cowlayer}}">
 					</gm-mappu-cowlayer>
 				</gm-mappu-map>
-				<gm-icm-chat id="eaglechat"
-					chatitems="{{chatitems}}"
-					store="{{itemstore}}"
-					activeuser="{{activeuser}}"
-					on-goto-location="gotolocation">
-		 		</gm-icm-chat>
 
 			</div>
 
@@ -254,6 +282,10 @@ Polymer({
     	itemconfig: {
     		value: function(){return {view: 'team',subview:'box',content: 'text'};}
     	},
+		chattoggled: {
+			value: false,
+			observer: '_togglechat'
+		},
 		toasttext: String,
 		account: Object,
 		users: Array,
@@ -263,6 +295,8 @@ Polymer({
     },
     ready: function(){
     	var self = this;
+		this.$.mainpanel.closeDrawer();
+
     	this.map = this.$.mapelement.map;
 
     	var ahnlayer = new d3.mappu.RasterLayer("Hoogtekaart", {
@@ -441,6 +475,17 @@ Polymer({
 			this.toasttext = 'No such location found';
 			this.$.toast.show();
 		}
-    }
+    },
+	_togglechat: function(){
+		if (this.chattoggled){
+			this.$.mainpanel.openDrawer();
+		}
+		else {
+			this.$.mainpanel.closeDrawer();
+		}
+	},
+	_toggleinfodialog: function(){
+		this.$.infodialog.toggle();
+	}
 });
 </script>

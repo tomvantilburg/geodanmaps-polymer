@@ -66,9 +66,9 @@
 									d3.event.stopPropagation();
 							})
 							.on('blur', function(){
-								d.properties.label = this.value;
-								//TODO: Okay, now it should be saved...
-								self.fire('featureChanged', d);
+                                var feature = d;
+								feature.properties.label = this.value;
+                                self.store.records(feature.id.toString()).data('feature',feature).sync();;
 							})
 							.html(d.properties.label);
 
