@@ -6,6 +6,11 @@
 <link rel="import" href="../bower_components/iron-icons/maps-icons.html">
 <link rel="import" href="../bower_components/paper-toggle-button/paper-toggle-button.html">
 <link rel="import" href="../bower_components/paper-toolbar/paper-toolbar.html">
+<link rel="import" href="../bower_components/paper-card/paper-card.html">
+<link rel="import" href="../bower_components/paper-button/paper-button.html">
+<link rel="import" href="../bower_components/paper-input/paper-input.html">
+<link rel="import" href="../bower_components/paper-item/paper-item.html">
+<link rel="import" href="../bower_components/paper-icon-item/paper-icon-item.html">
 
 <script src="http://api.tiles.mapbox.com/mapbox.js/plugins/turf/v2.0.0/turf.min.js"></script>
 <script src="../bower_components/proj4/dist/proj4.js"></script>
@@ -39,7 +44,7 @@
 			<div id='dashboard'>
 				<paper-card heading="Fences">
 					<div class="card-content">
-						Draw geofences. 
+						Draw geofences.
 					</div>
 					<div class="card-actions">
 						<paper-button on-click="drawFence" style="color: green;">
@@ -58,12 +63,12 @@
 						</paper-input>
 					</div>
 					<div class="card-actions">
-						<paper-toggle-button 
+						<paper-toggle-button
 							checked="{{smsalert}}">Enable</paper-toggle-button>
 					</div>
 				</paper-card>
 			</div>
-			
+
 			<template is="dom-repeat" items="[[vehicles]]">
 			<paper-icon-item on-click='_goto' class$="{{intersects(item.intersects)}}">
                 <iron-icon style='color: orange' icon$="{{_speedClass(item)}}" item-icon></iron-icon>
@@ -99,7 +104,7 @@
 	},
 
     ready: function() {
-    	
+
 
     },
     _goto: function(e) {
@@ -162,7 +167,7 @@
 	enable: function(){
 		var self = this;
 		var map = this.map;
-		
+
 		this.fencelayer = new d3.mappu.VectorLayer('Geo-Fences', {
 				reproject: true,
 				style: {
@@ -170,7 +175,7 @@
 					fill: 'none'
 				}
 		}).addTo(map);
-		
+		/*
 		this.controllayer = new d3.mappu.VectorLayer('Control', {
 			reproject: true,
             duration: 1000,
@@ -179,6 +184,7 @@
 				fill: 'blue'
 			}
 		}).addTo(map);
+        */
 		this.trackhistlayer = new d3.mappu.VectorLayer('Track history', {
 			reproject: true,
 			style: {
@@ -186,7 +192,7 @@
 				fill: 'grey'
 			}
 		}).addTo(map);
-            
+
 		this.layer = new d3.mappu.VectorLayer('Vehicles', {
 			reproject: true,
             duration: 1000,
@@ -216,7 +222,7 @@
 			 }
 			}]
 		}).addTo(map);
-		
+
         //haversine from http://www.movable-type.co.uk/scripts/latlong.html
         /** Converts numeric degrees to radians */
         if (typeof(Number.prototype.toRadians) === "undefined") {
@@ -234,7 +240,7 @@
         var haversine = function(point1, point2){
             if (!point2){return {distance: null,bearing: null};};
             var toRD = "+proj=sterea +lat_0=52.15616055555555 +lon_0=5.38763888888889 +k=0.999908 +x_0=155000 +y_0=463000 +ellps=bessel +units=m +towgs84=565.2369,50.0087,465.658,-0.406857330322398,0.350732676542563,-1.8703473836068,4.0812 +no_defs <>";
-			var from_rd = proj4(toRD, point2); 
+			var from_rd = proj4(toRD, point2);
 			var to_rd = proj4(toRD, point1);
 			//console.log('from: ',camcoords_rd, 'to: ',coords_rd);
 			var dx = to_rd[0] - from_rd[0];
@@ -264,7 +270,7 @@
                         	'marker-url':'../demos/assets/arrow-up.png',
                         	rotate: d.properties.bearing
                         };
-				
+
                         oldtime = d.properties.time;
                         oldpoint = d.geometry.coordinates;
                     });
@@ -311,10 +317,10 @@
                 	d.style = {fill: colorscale(counter - d.properties.T)};
                 	return d;
                 });
-                
+
                 history = history.concat(trackhist);
-                
-                
+
+
             });
             //Check for intersection
             features.forEach(function(feature){
@@ -344,18 +350,20 @@
 					}
 				}
 				self.set('routes.'+feature.id+'.intersects',intersects);
-				
-				
+
+
             });
+            /*
             self.controllayer.data = features.map(function(d){
             		d = JSON.parse(JSON.stringify(d));
             		d.style['marker-url'] = null;
             		return d;
             });
+            */
             self.trackhistlayer.data = history;
             self.layer.data = features;
             self.vehicles = features;
-            counter+=10000;
+            counter+=2000;
 		},1000);
 
 

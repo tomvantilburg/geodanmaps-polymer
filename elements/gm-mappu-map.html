@@ -66,13 +66,21 @@ Polymer({
         new d3.mappu.Sketch().addTo(this.map);
 
         //Background layer;
-    	new d3.mappu.RasterLayer('Topografie',  {
-            ogc_type: 'tms',
-            url: 'http://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}.png',
-            visible: true,
-            opacity: 1
-		 })
-		 .addTo(this.map);
+         new d3.mappu.RasterLayer('Basemap',  {
+             ogc_type: 'tms',
+             url: 'http://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}.png',
+             visible: true,
+             opacity: 1
+ 		 })
+ 		 .addTo(this.map);
+         new d3.mappu.RasterLayer('Labels',  {
+             ogc_type: 'tms',
+             //url: 'http://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}.png',
+             url: 'http://{s}.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}.png',
+             visible: true,
+             opacity: 1
+ 		 })
+ 		 .addTo(this.map);
 
     },
 

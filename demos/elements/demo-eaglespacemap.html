@@ -1,6 +1,7 @@
 <link rel="import" href="../../bower_components/polymer/polymer.html">
 <link rel="import" href="../../bower_components/paper-tabs/paper-tabs.html">
 <link rel="import" href="../../bower_components/paper-tabs/paper-tab.html">
+<link rel="import" href="../../bower_components/paper-toast/paper-toast.html">
 <link rel="import" href="../../bower_components/paper-drawer-panel/paper-drawer-panel.html">
 <link rel="import" href="../../bower_components/paper-header-panel/paper-header-panel.html">
 <link rel="import" href="../../bower_components/iron-flex-layout/classes/iron-flex-layout.html">
@@ -40,8 +41,12 @@
  paper-toolbar {
 		color: white;
 	}
+    #toast {
+        z-index: 1002;
+    }
 </style>
 <template>
+    <paper-toast id="toast" text="{{toasttext}}"></paper-toast>
 	<paper-header-panel>
 	<paper-toolbar>
 		<iron-selector attr-for-selected="name" selected="{{selected}}">
@@ -189,14 +194,19 @@ Polymer({
 
             window.setTimeout(function(){getAttention(c.detail)},0);
             self.map.center = c.detail;
+            self.map.redraw();
 		});
     },
     activate: function(){
+        var self = this;
     	if (this.startlocation){//TODO
     		this.map.resize();
 			var center = this.startlocation;
 			this.map.center = [center.lng,center.lat];
-			this.map.zoom = center.zoom;
+            setTimeout(function(){
+			    self.map.zoom = center.zoom;
+                self.map.redraw();
+            },500);
 		}
 	},
 	_selectedChanged: function(){
