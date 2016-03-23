@@ -26,6 +26,7 @@
 <link rel="import" href="../../elements/gm-configlist.html">
 <link rel="import" href="../../elements/gm-geosearch.html">
 <link rel="import" href="../../elements/gm-icm-natuurbrand.html">
+<link rel="import" href="../../elements/gm-icm-chat.html">
 <link rel="import" href="../../elements/gm-plugins-rws.html">
 <link rel="import" href="../../elements/gm-plugins-tracker.html">
 <link rel="import" href="../../elements/gm-plugins-eaglespace.html">
@@ -46,7 +47,9 @@
 		<iron-selector attr-for-selected="name" selected="{{selected}}">
 		  <paper-icon-button name="" toggles icon="icons:fullscreen" on-click='enterFullscreen'></paper-icon-button>
 		  <paper-icon-button name="sketchbox" toggles icon="icons:create"></paper-icon-button>
+          <!--
 		  <paper-icon-button name="gmconfigbox" toggles icon="icons:cloud"></paper-icon-button>
+        -->
 		  <paper-icon-button name="layerbox" toggles icon="maps:layers"></paper-icon-button>
 		  <paper-icon-button name="textbox" toggles icon="editor:format-size"></paper-icon-button>
 		  <paper-icon-button name="natuurbrandbox" toggles icon="social:whatshot"></paper-icon-button>
@@ -82,6 +85,14 @@
 				</div>
 
 				<div id='textbox'>
+                    <gm-icm-chat
+                    chatitems="{{chatitems}}"
+                    store="{{store}}"
+                    activeuser="{{activeuser}}"
+                    on-goto-location="gotolocation"
+                    >
+                    </gm-icm-chat>
+                    <!--
 					<gm-icm-text id="eagletext"
 						data="{{textdata}}"
 						items="{{textitems}}"
@@ -89,6 +100,7 @@
 						activeuser="{{activeuser}}"
 						on-goto-location="gotolocation">
 					</gm-icm-text>
+                    -->
 				</div>
 
 				<div id='sketchbox'>
@@ -143,15 +155,6 @@ Polymer({
     	var self = this;
     	this.$.drawer.closeDrawer();
     	this.map = this.$.mapelement.map;
-    	
-    	//TODO: this data sourced is not supposed to be used without permit 
-    	new d3.mappu.RasterLayer('Topografie',  {
-            ogc_type: 'tms',
-            url: 'http://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}.png',
-            visible: true
-		 })
-		 .addTo(this.map);
-		 
 
 		//TODO: Would like to automise this
 		this.$.layermanager.layers = this.map.layers;
@@ -179,6 +182,9 @@ Polymer({
                         .remove();
                 });
         }
+        this.addEventListener('gotolocation',function(d){
+    		self.gotolocation(d);
+    	});
 		this.addEventListener('goto-coords',function(c){
 
             window.setTimeout(function(){getAttention(c.detail)},0);
@@ -203,6 +209,23 @@ Polymer({
 		window.setTimeout(function(){
 			self.map.resize();
 		},1000);
+    },
+    gotolocation: function(d){
+    	var text = d.detail.text;
+    	var items = this.features.filter(function(d){
+			return d.data('feature').properties
+				&& d.data('feature').properties.label
+				&& d.data('feature').properties.label == text;
+		});
+		if (items[0]){
+			var feature = items[0].data('feature');
+			this.$.cowlayer.layer.zoomToFeature(feature);
+		}
+		else {
+			console.log('no location found');
+			this.toasttext = 'No such location found';
+			this.$.toast.show();
+		}
     }
 });
 </script>

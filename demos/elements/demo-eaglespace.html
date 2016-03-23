@@ -52,12 +52,12 @@
 	#toast {
 		z-index: 1000;
 	}
-	
+
 	.title {
 		color: white;
 	}
-	
-	
+
+
 
 </style>
 <template>
@@ -84,7 +84,7 @@
 	<gm-cow-core id="cowcore"
 		config="{{cowconfig}}"
 		core="{{core}}"
-		
+
 		></gm-cow-core>
 	<gm-cow-connector id="cowconnector"
 		account="{{account}}"
@@ -96,6 +96,7 @@
 		activeuser="{{activeuser}}"
 		textitems="{{textitems}}"
 		featureitems="{{featureitems}}"
+		chatitems="{{chatitems}}"
 		itemstore="{{itemstore}}"
 		startlocation="{{startlocation}}"
 		on-zoomto='zoomto'
@@ -120,7 +121,7 @@
 				<paper-item class='menu' name='users'>Users</paper-item>
 				<paper-item class='menu' name='projects'>Incidents</paper-item>
 				<template is="dom-if" if="[[curproject]]">
-					<paper-item class='menu' name='text'>Text</paper-item>
+					<!--<paper-item class='menu' name='text'>Text</paper-item>-->
 					<paper-item class='menu' name='map'>Map</paper-item>
 				</template>
 			</template>
@@ -182,6 +183,7 @@
 					configs="{{configs}}"
 					textdata="{{textdata}}"
 					textitems="{{textitems}}"
+					chatitems="{{chatitems}}"
 					activeuser="{{activeuser}}"
 					>
 				</demo-eaglespacemap>
