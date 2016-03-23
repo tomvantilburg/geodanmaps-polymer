@@ -253,6 +253,13 @@ Polymer({
 				.data('incidentLocation',{lng: msg.center[0],lat: msg.center[1], zoom: msg.zoom})
 				.sync();
 		});
+		this.cowconfig = {
+			protocol: 'wss',
+			url: 'websocket.geodan.nl',
+			port: 443,
+			dir: 'eaglespace',
+			key: 'eaglespace'
+		};
     },
     zoomto: function(e){
     	var bbox = e.detail.payload.data.bbox;
@@ -264,6 +271,7 @@ Polymer({
     	this.$.map.map.center = center;
     },
     _accountChanged: function(acc){
+		return; //TODO: DISABLED due to double cow instances
     	switch (acc.OrganisationCode){
     	case 'GEOF7646XXXX':
     		this.cowconfig = {
