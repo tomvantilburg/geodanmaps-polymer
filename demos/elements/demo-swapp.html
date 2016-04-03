@@ -1,0 +1,362 @@
+<link rel="import" href="../../bower_components/polymer/polymer.html">
+<link rel="import" href="../../bower_components/iron-ajax/iron-ajax.html">
+<link rel="import" href="../../bower_components/iron-icons/maps-icons.html">
+<link rel="import" href="../../bower_components/iron-selector/iron-selector.html">
+<link rel="import" href="../../bower_components/iron-pages/iron-pages.html">
+<link rel="import" href="../../bower_components/iron-flex-layout/iron-flex-layout.html">
+<link rel="import" href="../../bower_components/iron-collapse/iron-collapse.html">
+<link rel="import" href="../../bower_components/neon-animation/neon-animation.html">
+<link rel="import" href="../../bower_components/paper-toolbar/paper-toolbar.html">
+<link rel="import" href="../../bower_components/paper-drawer-panel/paper-drawer-panel.html">
+<link rel="import" href="../../bower_components/paper-header-panel/paper-header-panel.html">
+<link rel="import" href="../../bower_components/paper-icon-button/paper-icon-button.html">
+<link rel="import" href="../../bower_components/paper-listbox/paper-listbox.html">
+<link rel="import" href="../../bower_components/paper-badge/paper-badge.html">
+<link rel="import" href="../../bower_components/paper-item/paper-item.html">
+<link rel="import" href="../../bower_components/paper-item/paper-icon-item.html">
+<link rel="import" href="../../bower_components/paper-item/paper-item-body.html">
+<link rel="import" href="../../bower_components/paper-card/paper-card.html">
+<link rel="import" href="../../bower_components/paper-tabs/paper-tabs.html">
+<link rel="import" href="../../bower_components/paper-tabs/paper-tab.html">
+<link rel="import" href="../../bower_components/paper-button/paper-button.html">
+<link rel="import" href="../../bower_components/paper-toggle-button/paper-toggle-button.html">
+<link rel="import" href="../../bower_components/paper-checkbox/paper-checkbox.html">
+<link rel="import" href="../../bower_components/paper-material/paper-material.html">
+<link rel="import" href="../../bower_components/paper-menu/paper-menu.html">
+<link rel="import" href="../../bower_components/paper-dropdown-menu/paper-dropdown-menu.html">
+<link rel="import" href="../../bower_components/paper-menu-button/paper-menu-button.html">
+
+<link rel="import" href="../../bower_components/paper-toast/paper-toast.html">
+<link rel="import" href="../../bower_components/paper-scroll-header-panel/paper-scroll-header-panel.html">
+<link rel="import" href="../../elements/gm-mappu-map.html">
+
+
+<dom-module id="demo-swapp">
+
+
+
+
+<style>
+	paper-header-panel {
+	  height: 100%;
+	  background: white;
+	}
+
+	paper-badge {
+    	--paper-badge-margin-left: -8px;
+    	--paper-badge-margin-bottom: -12px;
+		--paper-badge-background: orange;
+	}
+	paper-card {
+		--paper-card-actions: {
+			color: black;
+		}
+	}
+
+	.accounting {
+		background: #3f51b5;
+		color: white;
+	}
+	.taskcard {
+		width: 98%;
+		margin-left: 10px;
+		margin-bottom: 5px;
+		padding: 10px;
+		cursor: pointer;
+	}
+	.mytask {
+		border-left: 2px orange solid;
+	}
+	.completed {
+		color: grey;
+	}
+	.contentpanel {
+		height: 88%;/* FIXME */
+	}
+	.toggleright {
+		padding: 10px;
+	}
+	#toast {
+		z-index: 1000;
+	}
+
+</style>
+<template>
+	<iron-ajax id="ajaxRequest"
+		auto
+		url="http://localhost/swapp_server/api/Login"
+		body='{"password": "kevin", "username": "kevin"}'
+		method="post"
+		content-Type="application/json"
+		verbose="true"
+		with-credentials="false"
+		response-type="json"
+		last-response="{{account}}"></iron-ajax>
+	<iron-ajax id="incidentsRequest"
+		url="http://localhost/swapp_server/api/incidentlist"
+		content-Type="application/json"
+		verbose="true"
+		with-credentials="true"
+		response-type="json"
+		last-response="{{incidentlist}}"></iron-ajax>
+	<iron-ajax id="incidentDataRequest"
+		url="{{incidenDataUrl}}"
+		content-Type="application/json"
+		verbose="true"
+		with-credentials="true"
+		response-type="json"
+		last-response="{{incidentdata}}"></iron-ajax>
+	<iron-ajax id="incidentTasksRequest"
+		url="{{incidenTasksUrl}}"
+		content-Type="application/json"
+		verbose="true"
+		with-credentials="true"
+		response-type="json"
+		last-response="{{incidenttasks}}"></iron-ajax>
+	<iron-ajax id="jobTitleRequest"
+		url="http://localhost/swapp_server/api/JobTitle/"
+		content-Type="application/json"
+		verbose="true"
+		with-credentials="true"
+		response-type="json"
+		last-response="{{jobtitledata}}"></iron-ajax>
+
+
+	<paper-toast id="toast" text="{{toasttext}}"></paper-toast>
+
+	<paper-drawer-panel id='drawerpanel' drawer-width='300px'>
+	 <!-- MENU -->
+	 <paper-header-panel mode="seamed" drawer>
+	 	<paper-toolbar>
+	 		<img src='../images/icon-eagle.png'/>
+	 	</paper-toolbar>
+		<div class='content'>
+
+
+			<paper-dropdown-menu label="Sort by">
+			  <paper-menu attr-for-selected='name' selected="{{sortval}}" class="dropdown-content">
+			    <paper-item name='creationTimeDateTime'>Creation</paper-item>
+			    <paper-item name='tmp'>Last udate</paper-item>
+			  </paper-menu>
+			</paper-dropdown-menu>
+	    	<iron-selector id='projectselector'
+				attr-for-selected="name"
+				selected="{{selectedproject}}">
+	    		<template is="dom-repeat"
+					items='{{incidentlist.incidents}}'
+					sort="{{sortincidents(sortval)}}"
+					filter="{{filterincidents(jobtitleid)}}">
+					<paper-icon-item name="{{item.incidentId}}">
+
+						<paper-item-body two-line>
+							<div><span>{{item.name}}</span> <paper-badge label="{{getopentasks(item)}}"></paper-badge></div>
+							<div secondary>{{item.creationTimeDateTime}}</div>
+						</paper-item-body>
+
+			            <!--<paper-icon-button class='close' icon="close" alt="Sluit incident" on-click='remove'>
+			            </paper-icon-button>-->
+					</paper-icon-item>
+				</template>
+			</iron-selector>
+		</div>
+    </paper-header-panel>
+    <!--MAIN SCREEN-->
+    <paper-header-panel main>
+    	<paper-toolbar>
+    		<paper-icon-button icon="menu" paper-drawer-toggle></paper-icon-button>
+    		<div class='title' flex>{{incidentdata.incident.name}}</div>
+
+			<paper-menu-button horizontal-align="right">
+			  <paper-button class="dropdown-trigger">{{jobname}}</paper-button>
+			  <paper-card  class="dropdown-content" heading="{{account.user.name}}">
+				  <div class="card-content">
+				  <paper-dropdown-menu label="Rol">
+  				  <paper-listbox class="dropdown-content" selected="{{jobtitleid}}" attr-for-selected='name'>
+  					<template is="dom-repeat" items={{account.user.jobTitles}}>
+  				    	<paper-item name="{{item.jobTitleId}}">{{item.name}}
+
+  						</paper-item>
+  					</template>
+  				  </paper-listbox>
+  				</paper-dropdown-menu>
+				</div>
+				<div class="card-actions">
+					<paper-button on-click="logout">Uitloggen</paper-button>
+				 </div>
+				</paper-card>
+			</paper-menu-button>
+
+
+    	</paper-toolbar>
+		<div main class='contentpanel'>
+			<paper-header-panel>
+				<paper-toolbar>
+					<paper-tabs attr-for-selected="name" selected="{{selectedpage}}">
+					  <paper-tab name="logboek">Logboek</paper-tab>
+					  <paper-tab name="totaalbeeld">Totaalbeeld</paper-tab>
+					  <paper-tab name="taken">Taken</paper-tab>
+					  <paper-tab name="kaart">Kaart</paper-tab>
+					</paper-tabs>
+				</paper-toolbar>
+			<iron-pages main class='content fit pages' attr-for-selected="name" selected="{{selectedpage}}">
+				<div name='logboek'>
+						<h2>Logboek</h2>
+				</div>
+				<div name='totaalbeeld'>Totaalbeeld</div>
+
+				<div name='taken'>
+					<div class='toggleright'>
+						<paper-toggle-button active="{{showclosedtasks}}">Include closed tasks</paper-toggle-button>
+					</div>
+					<template is="dom-repeat" items="{{incidenttasks.incidentTasks.0.tasks}}" filter="{{openclosedtasks(showclosedtasks)}}">
+						<paper-material class$='{{item.status}} {{getmyclass(item)}} taskcard'>
+							<div on-click="toggle">
+								<template is="dom-if" if={{!item.tasks}}>
+									<paper-checkbox></paper-checkbox>
+								</template>
+								{{item.name}}
+								<template is="dom-if" if={{item.forms.0}}>
+									{{item.forms.0.url}}
+								</template>
+							</div>
+							<iron-collapse>
+								<template is="dom-repeat" items="{{item.tasks}}">
+									<paper-button>{{item.name}}</paper-button>
+								</template>
+							</iron-collapse>
+						</paper-material>
+					</template>
+
+				</div>
+				<div name="kaart">
+					<gm-mappu-map map="{{mappu}}"></gm-mappu-map>
+				</div>
+			</iron-pages>
+		</div>
+	</paper-header-panel>
+    </paper-header-panel>
+</paper-drawer-panel>
+</template>
+</dom-module>
+
+<script>
+Polymer({
+    is: 'demo-swapp',
+    properties: {
+    	map: Object,
+    	account: {
+    		type: Object,
+    		observer: '_accountChanged'
+    	},
+    	selectedproject: {
+    		type: String,
+			observer: '_selectedProjectChanged'
+    	},
+		selectedpage: {
+			observer: '_selectedPageChanged',
+			value: 'login',
+			type: String
+		},
+		toasttext: {
+			type: String
+		},
+		otap: {
+			type: String,
+			value: 'ontw'
+		},
+		sortval: 'creationTimeDateTime',
+		jobtitleid: {
+			type: Number,
+			observer: '_jobtitleChanged'
+		}
+    },
+    ready: function(){
+    	var self = this;
+    	this.addEventListener('logout',function(){
+    		self.$.cascore.logout();
+    		self.selected = 'nouser';
+    	});
+    },
+	toggle: function(e) {
+       e.currentTarget.nextElementSibling.toggle();
+    },
+	getmyclass: function(item){
+		var ismyjob = false;
+		if (item.stakeHoldersLgIds){
+			if (item.stakeHoldersLgIds.indexOf(this.jobtitleid) > -1){
+				ismyjob = true;
+			}
+		};
+		return ismyjob?'mytask':null;
+	},
+
+	sortincidents: function(sortby){
+		switch (sortby){
+			case 'creationTimeDateTime':
+				return function(a,b){
+					return new Date(b[sortby]).getTime() - new Date(a[sortby]).getTime();
+				}
+				break;
+			default:
+				return null;
+		}
+	},
+	filterincidents: function(jobtitleid){
+			return function(item){
+				return true;//TODO
+			}
+	},
+	getopentasks: function(item){
+		return item.taskCountByJobTitleId[this.jobtitleid]?item.taskCountByJobTitleId[this.jobtitleid].taskCountOpen:'';
+	},
+	openclosedtasks: function(showclosedtasks){
+		return function(task){
+			if (showclosedtasks || task.status != "Completed"){
+				return true;
+			};
+			return false;
+		}
+	},
+	_resetProject:function(){
+		this.selectedproject = null;
+		this.incidentdata = null;
+		this.incidenttasks = null;
+	},
+    _accountChanged: function(acc){
+		if (acc.user){
+			this.token = acc.token;
+			this._resetProject();
+			this.jobtitleid = acc.user.defaultJobTitleId;
+			this.jobname = acc.user.jobTitles.filter(d=>d.jobTitleId == this.jobtitleid)[0].name;
+			this.$.jobTitleRequest.headers.token = this.token;
+			this.$.jobTitleRequest.generateRequest();
+		}
+    },
+	_jobtitleChanged: function(id){
+		this._resetProject();
+		this.jobname = this.account.user.jobTitles.filter(d=>d.jobTitleId == id)[0].name;
+		this.$.incidentsRequest.params.jobTitleId =	this.jobtitleid;
+		this.$.incidentsRequest.headers.token = this.token;
+		this.$.incidentsRequest.generateRequest();
+	},
+	_selectedProjectChanged: function(){
+		//var project = this.incidentlist.incidents[this.selectedproject];
+		var id = this.selectedproject;
+		if (id){
+			this.$.incidentDataRequest.url = "http://localhost/swapp_server/api/Incident/" + id;
+			this.$.incidentDataRequest.params.jobTitleId =	this.jobtitleid;
+			this.$.incidentDataRequest.headers.token = this.token;
+			this.$.incidentDataRequest.generateRequest();
+
+			this.$.incidentTasksRequest.url = "http://localhost/swapp_server/api/Task/" + id;
+			this.$.incidentTasksRequest.params.jobTitleId =	this.jobtitleid;
+			this.$.incidentTasksRequest.headers.token = this.token;
+			this.$.incidentTasksRequest.generateRequest();
+		}
+	},
+	_selectedPageChanged: function(){
+		var mappu = this.querySelector('gm-mappu-map');
+		mappu.map.resize();//TODO eewww....
+	}
+});
+</script>

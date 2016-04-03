@@ -39,34 +39,34 @@
 			</paper-button>
 			<div class='inputs'>
 				<b>Inputs:</b><br>
-				
-				Current area: 
+
+				Current area:
 				<div><span>{{area}}</span> km&sup2; <span style="color: red; display:{{area>100?'inline':'none'}}"><small> (max 100!)</small></span></div>
-				
+
 				<paper-radio-group id='source' selected="top10">
 				  <paper-radio-button name="top10">Top10NL</paper-radio-button>
 				  <paper-radio-button name="nlr">NLR</paper-radio-button>
 				</paper-radio-group>
-				
-				<paper-input 
-					id="windspeed" 
-					value="8" 
-					type="number" 
-					label="Windspeed (m/s)" 
-					floatingLabel 
+
+				<paper-input
+					id="windspeed"
+					value="8"
+					type="number"
+					label="Windspeed (m/s)"
+					floatingLabel
 					error-message="Value must be a number!">
 					<!--isInvalid="{{!$.windspeed.validity.valid}}">-->
 				</paper-input>
-				<paper-input 
-					id="winddir" 
-					type="number" 
-					value="45" 
-					label="Winddir (deg)" 
-					floatingLabel 
-					error-message="Value must be a number!"> 
+				<paper-input
+					id="winddir"
+					type="number"
+					value="45"
+					label="Winddir (deg)"
+					floatingLabel
+					error-message="Value must be a number!">
 					<!--isInvalid="{{!$.winddir.validity.valid}}">-->
 				</paper-input>
-				
+
 				<paper-input id="date" type="date" value="{{date}}" label="Date" floatingLabel>
 				</paper-input>
 				<paper-input id="time" type="time" value="{{time}}" label="Time" floatingLabel>
@@ -196,11 +196,11 @@ Polymer({
 		var map = this.map;
 		this.extent = map.extent;
 		this.zoom = map.zoom;
-		
+
 		map.dispatch.on('zoomend', function(){
 				self.zoomChanged();
 		});
-		
+
 		new d3.mappu.RasterLayer('Vegetatie',{
 				visible: false,
 				ogc_type: 'wms',
@@ -222,7 +222,14 @@ Polymer({
     		layers: ['eaglespace:biomassProduction_Hoge_Veluwe_20150315_20151004'],
     		opacity: 0
     	}).addTo(this.map);
-		
+		new d3.mappu.RasterLayer('Rel. humidity',{
+    		visible: false,
+    		ogc_type: 'wms',
+    		url: 'http://model.geodan.nl/geoserver/eaglespace/wms?',
+    		layers: ['eaglespace:rh_min_Hoge_Veluwe_20150301_20151003'],
+    		opacity: 0
+    	}).addTo(this.map);
+
 		this.layer = new d3.mappu.VectorLayer('Natuurbrand invoer',{
             visible: true,
             reproject: true,
@@ -308,7 +315,7 @@ Polymer({
 			//var em = document.querySelector('#eaglemap');
 			//em.sketchlayer = this.prevlayer;
 			this.map.sketch.layer = this.prevlayer;
-			
+
 		}
 	},
 	draw: function(){
@@ -323,14 +330,14 @@ Polymer({
 	startBatch: function(){
 		this.startSubset();
 	},
-	
+
 	startSubset: function(){
 		if (this.area > 100){
 			this.status = 'Too big area';
 			console.warn('Area too big');
 			return;
 		}
-		
+
 		/** 1. Get extents and send makesubset **/
 		var map = this.map;
 		var extent = map.extent;
@@ -338,15 +345,15 @@ Polymer({
 		extent[0] = proj4(mercator,extent[0]);
 		extent[1] = proj4(mercator,extent[1]);
 		var params = Natuurbrand_utils.makesubset(extent);
-		this.$.wps_call.params = params; 
-		this.$.wps_call.generateRequest(); 
+		this.$.wps_call.params = params;
+		this.$.wps_call.generateRequest();
 		//console.log(params);
 	},
 	startMakeLcp: function(terreinid){
 		/** 2. Make terrain **/
 		var map = this.map;
 		var params = Natuurbrand_utils.makelcp(terreinid);
-		this.$.wps_call.params = params; 
+		this.$.wps_call.params = params;
 		this.$.wps_call.generateRequest();
 		//console.log(params);
 	},
@@ -364,7 +371,7 @@ Polymer({
 			startarr.push(d.geometry.type.toUpperCase() + '(' + projected.join(',') + ')');
 		});
 		var geom = startarr.join('!');
-		
+
 		var stoparr = [];
 		var projected = [];
 		this.layer.data.filter(function(d){
@@ -380,9 +387,9 @@ Polymer({
 		var startmonth = zpad(date.getMonth()+1,2);
 		var startday = zpad(date.getDate(),2);
 		var starthour = zpad(date.getHours(),2)+zpad(date.getMinutes(),2);
-		
+
 		var stoplines = stoparr.join('!');
-		
+
 		var winddir = zpad(this.$.winddir.value,3);
 		var windspeed = zpad(this.$.windspeed.value,2);
 		//var windString="(03,19,1100,12,225,00),(03,19,1200,12,225,00),(03,19,1300,12,225,00),(03,19,1400,12,225,00),(03,19,1500,12,225,00),(03,19,1600,12,225,00),(03,19,1700,12,225,00),(03,19,1800,12,225,00),(03,19,1900,12,225,00),(03,19,2000,12,225,00),(03,19,2100,12,225,00),(03,19,2200,12,225,00),(03,19,2300,12,225,00),(03,20,1100,12,225,00)";
@@ -398,7 +405,7 @@ Polymer({
 			weatherArr.push(str);
 		}
 		var weatherString = weatherArr.join(',');
-		
+
 		var windArr = [];
 		for (var i=0;i<=6;i++){
 			//Run for 6 hours
@@ -413,17 +420,17 @@ Polymer({
 		//Add some extra wind till the next day, farsite doesn't like without
 		date.setHours(date.getHours()+24);
 		windArr.push("("+month+","+zpad(date.getDate(),2)+","+hour+","+windspeed+","+winddir+",00)");
-			
+
 		var windString = windArr.join(',');
 		var name = this.$.name.value;
-		
+
 		if (this.$.source.selected == 'top10') {
 			var fuelmodel = landscapeid;
 		}
 		else if (this.$.source.selected == 'nlr') {
 			var fuelmodel = '9999';
 		}
-		
+
 		var run_params = {
 			service: 'WPS',
 			version: '1.1.0',
@@ -443,7 +450,7 @@ Polymer({
 			}, ';'),
 			RawDataOutput: 'string',
 			mimeType: 'application/json'
-		}; 
+		};
 		this.$.wps_call.params = run_params;
 		//console.log(run_params);
 		this.$.wps_call.generateRequest();
@@ -486,7 +493,7 @@ Polymer({
 				case 'farsiteRun':
 					//Add fire layer
 					var map = self.map
-					var url = '/service/geoserver/model_wildfire/ows?service=WFS&version=1.0.0&request=GetFeature&typeName=model_wildfire:result_'+runid+'&maxFeatures=100&outputFormat=json&srsName=EPSG:4326'; 
+					var url = '/service/geoserver/model_wildfire/ows?service=WFS&version=1.0.0&request=GetFeature&typeName=model_wildfire:result_'+runid+'&maxFeatures=100&outputFormat=json&srsName=EPSG:4326';
 					d3.json(url, function(res){
 						var layer =  new d3.mappu.VectorLayer('fire'+runid,{
 								reproject: true,
