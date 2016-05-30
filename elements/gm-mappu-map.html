@@ -20,6 +20,7 @@
         bottom: 0px;
         top: 0px;
 	}
+
     #content {
         position: relative;
         height: 100%;
@@ -43,25 +44,38 @@ var map = null; //For debug
 Polymer({
     is: 'gm-mappu-map',
     properties: {
-    	map: {
-    		notify: true,
-    		type: Object
-    	},
     	center: {
     		type: Array,
-    		value: [5.2,52.2]
+    		value: function(){return [5.2,52.2]},
+            observer: '_centerChanged'
+    	},
+        zoom: {
+            type: Number,
+            value: 15,
+            observer: '_zoomChanged'
+        },
+        map: {
+    		notify: true,
+    		type: Object
     	}
     },
+    _centerChanged: function(){
+        var self = this;
+        setTimeout(function(){
+            //if (self.map) self.map.center = self.center;
+        },1000);
+    },
+    _zoomChanged: function(){
+        //if (this.map) this.map.zoom = this.zoom;
+    },
     ready: function(){
-    	this.map = new d3.mappu.Map(this.$.mapdiv,{
-            //center: this.center,
-            center: [5.2,52.2],
-						zoom: 18,
-						minZoom: 10,
-						maxZoom: 30,
-						projection: d3.geo.mercator()
+        this.map = new d3.mappu.Map(this.$.mapdiv,{
+            center: this.center,
+            zoom: this.zoom,
+            minZoom: 10,
+            maxZoom: 30,
+            projection: d3.geo.mercator()
          });
-
         //Edit functionality
         new d3.mappu.Sketch().addTo(this.map);
 
@@ -84,11 +98,14 @@ Polymer({
     },
 
     attached: function(){
-    	this.map.resize();
+        this.map.resize();
+        this.map.zoom = this.zoom;
+        this.map.center = this.center;
+    	//this.map.redraw();
     },
     resize: function(){
     	console.warn('deprecated: resize possibly not needed anymore');
-    	this.map.resize();
+    	//this.map.resize();
     }
 
 

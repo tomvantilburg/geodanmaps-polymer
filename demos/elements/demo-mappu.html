@@ -21,15 +21,21 @@
 
 <dom-module id="demo-mappu">
 <style>
-	#map {
+	#mapelement {
 		width: 100%;
 		height: 100%;
+	}
+	#zoombuttons{
+		position: absolute;
+		bottom: 10px;
+		right: 10px;
 	}
 	#geosearch {
 		position: absolute;
 		top: 40;
 		right: 10;
 		width: auto;
+		z-index: 101;
 	}
 	#catalog_button {
 		position: absolute;
@@ -46,18 +52,21 @@
     	top: 0px;
     	width: 300px;
     	height: auto;
+		z-index: 101;
     }
     #layermanager {
     	position: absolute;
     	right: 10px;
     	top: 70px;
     	min-width: 200px;
+		z-index: 101;
     }
     #sketch {
     	position: absolute;
     	left: 10px;
     	bottom: 70px;
     	min-width: 200px;
+		z-index: 101;
     }
 
     gm-cas {
@@ -66,7 +75,7 @@
     	bottom: 10px;
     	z-index: 100;
     }
-    
+
     gm-mappu-postgismanager {
     	position: absolute;
     	left: 0px;
@@ -76,21 +85,24 @@
     	background: white;
     	z-index: 1002;
     }
-	
+
 </style>
 <template>
 		<gm-mappu-postgismanager id='postgismanager' url='http://192.168.40.2:8080/data'></gm-mappu-postgismanager>
-		<gm-mappu-map id="mapelement" map="{{map}}"></gm-mappu-map>
-		<gm-mappu-zoombuttons id="zoombuttons" map="[[map]]"></gm-mappu-zoombuttons>
-		<gm-mappu-layermanager id="layermanager" map="{{map}}"></gm-mappu-layermanager>
+		<gm-mappu-map id="mapelement" map="{{map}}">
+			<gm-mappu-zoombuttons id="zoombuttons" map="[[map]]"></gm-mappu-zoombuttons>
+			<!--<gm-mappu-layermanager id="layermanager" map="{{map}}"></gm-mappu-layermanager>
+		-->
+		</gm-mappu-map>
+
 		<!--
 		<gm-cas></gm-cas>
 		<gm-routing></gm-routing>
-		
+
 		<gm-geosearch id="geosearch" map="{{map}}"></gm-geosearch>
 		<gm-mappu-sketch id="sketch" layer="{{sketchlayer}}" styleset="{{styleset}}"></gm-mappu-sketch>
-		
-		
+
+
 
 		<paper-fab icon="add" id="catalog_button" on-click="toggleCatalog">plain dialog</paper-fab>
 		<paper-dialog id='dialog'>
@@ -100,7 +112,7 @@
 			</paper-dialog-scrollable>
 		</paper-dialog>
 		-->
-		
+
 	</template>
 </dom-module>
 
@@ -111,7 +123,7 @@ Polymer({
     	map: Object,
     	sketchlayer: Object,
     },
-    
+
     ready: function(){
     	var self = this;
     	var map = self.$.mapelement.map;
@@ -120,7 +132,7 @@ Polymer({
     			layer.addTo(map);
     	});
     	//MAP
-    	
+
     	/*
     	var testlayer = new d3.mappu.RasterLayer('Mapbox baselayer',  {
             ogc_type: 'tms',
@@ -135,7 +147,7 @@ Polymer({
             visible: true
 		 })
 		 .addTo(this.map);
-		 
+
     	this.sketchlayer = new d3.mappu.VectorLayer('Sketch',{
     		reproject: true,
 			style: {
@@ -204,7 +216,7 @@ Polymer({
     		{"stroke":"purple","fill":"purple"},
     		{"stroke":"violet","fill":"violet"}
     	]};
-    	
+
     },
     toggleCatalog: function(){
     	this.$.dialog.toggle();
