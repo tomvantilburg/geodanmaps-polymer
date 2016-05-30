@@ -168,6 +168,13 @@
 		var self = this;
 		var map = this.map;
 
+		new d3.mappu.RasterLayer('Top10NL',  {
+        ogc_type: 'wms',
+        url: 'http://model.geodan.nl/geoserver/wms',
+        layers: 'nl_data:terrein',
+        visible: true
+    }).addTo(map);
+		
 		this.fencelayer = new d3.mappu.VectorLayer('Geo-Fences', {
 				reproject: true,
 				style: {

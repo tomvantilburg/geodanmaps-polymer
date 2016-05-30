@@ -302,7 +302,14 @@ Polymer({
     },
     ready: function(){
     	var self = this;
-    	this.$.cowcore.connect();
+    	this.cowconfig = {
+				protocol: 'wss',
+				url: 'websocket.geodan.nl',
+				port: 443,
+				dir: 'eaglewaterdemo',
+				key: 'eaglewaterdemo'
+			};
+    	//this.$.cowcore.connect();
     	this.addEventListener('logout',function(){
     		self.$.cascore.logout();
     		self.selected = 'nouser';
@@ -337,6 +344,7 @@ Polymer({
         function getAttention(point){
             //fire circle
             var screencoords = self.map.projection(point);
+            /* TODO: omschrijven naar nieuwe kaartlagen in mappu
             self.map.svg.append('circle')
                 .attr('cx',screencoords[0])
                 .attr('cy',screencoords[1])
@@ -349,6 +357,7 @@ Polymer({
                         .attr('r',1)
                         .remove();
                 });
+            */
         }
 		this.addEventListener('goto-coords',function(c){
 
@@ -357,8 +366,9 @@ Polymer({
 		});
     },
     _accountChanged: function(acc){
+    	/*
     	switch (acc.OrganisationCode){
-    		/*
+    		
     	case 'GEOF7646XXXX':
     		this.cowconfig = {
     			protocol: 'wss',
@@ -368,7 +378,7 @@ Polymer({
     			key: 'geofort'
     		};
     		break;
-    		*/
+    		
     	default:
     		this.cowconfig = {
 				protocol: 'wss',
@@ -378,7 +388,7 @@ Polymer({
 				key: 'eaglewaterdemo'
 			};
     		break;
-    	}
+    	}*/
     },
     _projectChanged: function(){
     	var self = this;
