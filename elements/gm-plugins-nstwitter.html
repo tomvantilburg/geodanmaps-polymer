@@ -33,23 +33,36 @@
 	.dashed {
 		stroke-dasharray: 5,5;
 	}
-	
+
 	paper-item {
 		--paper-item-body:{
 		  white-space: nowrap;
 		};
   }
-	
+
 </style>
 	<template>
-		<iron-ajax 
+        <!--
+		<iron-ajax
 			id="treinenrequest"
 			url = "http://research.geodan.nl/service/trein/location/api/positions"
 			params = '{"username":"ns","timestamp":0}'
 			handle-as="json"
 			on-response="handleTreinResponse"
+			></iron-ajax>-->
+        <iron-ajax
+			id="treinenrequest"
+            url="http://eo-sensor.geodan.nl/eaglex/api/trains"
+			handle-as="json"
+			on-response="handleTreinResponse"
 			></iron-ajax>
-		<iron-ajax 
+        <iron-ajax
+			id="webfleetrequest"
+            url="http://eo-sensor/eaglex/api/webfleet"
+			handle-as="json"
+			on-response="handleWebfleetResponse"
+			></iron-ajax>
+		<iron-ajax
 			id="twitterrequest"
 			url = "http://research.geodan.nl/service/osgis_geoserver/tweets/ows"
 			params = '{"service":"WFS","version":"1.0.0","request":"GetFeature","typeName":"tweets:recent_tweets_within","maxFeatures":50,"outputFormat":"json","viewparams":"timestmp:0;interval:0;x:0;y:0"}';
@@ -60,7 +73,7 @@
 				<div class="title">NS &amp; Twitter</div>
 				<paper-toggle-button on-change="onoff" label="sync"></paper-toggle-button>
 			</paper-toolbar>
-			
+
 		<template id='tweetlist' is="dom-repeat" items="{{twitterdata}}">
 			<paper-item on-click='toggle'>
 				<paper-item-body two-line>
@@ -75,15 +88,15 @@
 		</template>
 	</template>
 </dom-module>
-	
+
 <script>
   Polymer({
     is: "gm-plugins-nstwitter",
 	properties: {
 	},
-	
+
     ready: function() {
-	
+
     },
     toggle: function(e) {
 		this.fire('goto-coords',e.model.item.geometry.coordinates);
@@ -107,7 +120,7 @@
 			this.map.center = this.selection.geometry.coordinates;
 			//this.map.map.zoom = 24; //can't zoom while still centering (bug in mappu)
 		}
-		
+
 	},
 	locationsChanged: function(){
 		var self = this;
@@ -115,6 +128,32 @@
 	parseTime: function(t){
 		return new Date(t * 1000).toLocaleString();
 	},
+    handleWebfleetResponse: function(d){
+        var self = this;
+        this.data = d.detail.xhr.response;
+		var collection = {"type":"FeatureCollection","features":[]};
+
+        this.data.forEach(function(d){
+            var newlocation = {
+                type: 'Feature',
+                id: d.Name,
+                properties: d,
+                style: {
+                    stroke: "orange",
+                    fill: "orange",
+                },
+                geometry: {
+						type: "Point",
+						coordinates: [
+							d.Longitude,
+							d.Latitude
+							]
+				}
+            }
+            collection.features.push(newlocation);
+		});
+		this.webfleetlayer.data = collection.features;
+    },
 	handleTreinResponse: function(d){
 		this.data = d.detail.xhr.response;
 		var collection = {"type":"FeatureCollection","features":[]};
@@ -127,17 +166,17 @@
 				var color = "#cccccc";
 			var newlocation = {
 				type: "Feature",
-				
+
 				id: d.Trackee,
 				properties: {
-					id: d.Trackee, 
-					organisation: d.Organisation, 
-					speed: d.Speed, 
-					track: d.Track, 
+					id: d.Trackee,
+					organisation: d.Organisation,
+					speed: d.Speed,
+					track: d.Track,
 					bps: d.Bps,
 					dop: d.Dop
 				},
-				style: { 
+				style: {
 					fill: color
 				},
 				geometry: {
@@ -153,7 +192,7 @@
 						name: "urn:ogc:def:crs:OGC:1.3:CRS84"
 					}
 				}
-					
+
 			};
 			collection.features.push(newlocation);
 		});
@@ -171,13 +210,45 @@
 	enable: function(){
 		var self = this;
 		var map = this.map;
+        var opacscale = d3.scale.linear().range([0,1]).domain([16,18]);
+        var opacfunc = function(){
+            return opacscale(self.map.zoom);
+        }
+        this.webfleetlayer = new d3.mappu.VectorLayer('Webfleet', {
+			reproject: true,
+			duration: 10000,
+			style: {
+				fill: 'orange',
+                stroke: 'orange'
+			},
+			labelfield: 'Type',
+            labelStyle: {
+                opacity: opacfunc
+            },
+			events: [{
+			 event: 'mouseover',
+			 action: function(d){
+				var event = d3.mouse(map.mapdiv);
+                d3.select(this.parentNode).selectAll('.vectorLabel').style('opacity',1);
+			 }
+             },{
+              event: 'mouseout',
+              action: function(d){
+                 var event = d3.mouse(map.mapdiv);
+                 d3.select(this.parentNode).selectAll('.vectorLabel').style('opacity',opacfunc);
+              }
+            }]
+		}).addTo(map);
 		this.treinenlayer = new d3.mappu.VectorLayer('Treinen', {
 			reproject: true,
 			duration: 10000,
 			style: {
-				'fill-opacity': 0.7
+				opacity: opacfunc
 			},
 			labelfield: 'id',
+            labelStyle: {
+                opacity: opacfunc
+            },
 			events: [{
 			 event: 'mouseover',
 			 action: function(d){
@@ -185,7 +256,7 @@
 			 }
 			}]
 		}).addTo(map);
-		
+
 		this.twitterlayer = new d3.mappu.VectorLayer('Tweets', {
 			reproject: true,
 			style: {
@@ -200,29 +271,40 @@
 			 }
 			}]
 		}).addTo(map);
-		
+
 		function gettreinen(t){
 			self.$.treinenrequest.params.timestamp = t.toISOString();
-			self.$.treinenrequest.generateRequest(); 
+            self.$.treinenrequest.params.date = t.toISOString();
+			self.$.treinenrequest.generateRequest();
 		}
 		clearInterval(this.treineninterval);
-		gettreinen(new Date());
+		//gettreinen(new Date());
 		this.treineninterval = setInterval(function(){
-				gettreinen(new Date());
+				//gettreinen(new Date());
 		},10000);
-		
+
 		function gettweets(t){
 			var timestmp = parseInt(t.getTime()/1000);
 			self.$.twitterrequest.params.viewparams = "timestmp:"+timestmp + ";interval:15;x:0;y:0";
-			self.$.twitterrequest.generateRequest(); 
+			self.$.twitterrequest.generateRequest();
 		}
 		clearInterval(this.twitterinterval);
 		gettweets(new Date());
 		this.twitterinterval = setInterval(function(){
 				gettweets(new Date());
 		},10000);
-		 
-			
+
+        function getwebfleet(t){
+            var timestmp = parseInt(t.getTime()/1000);
+            self.$.webfleetrequest.params.date = t.toISOString();
+            self.$.webfleetrequest.generateRequest();
+        }
+        clearInterval(this.webfleetinterval);
+        getwebfleet(new Date());
+        this.webfleetinterval = setInterval(function(){
+                getwebfleet(new Date());
+        },10000);
+
 	}
   });
 </script>

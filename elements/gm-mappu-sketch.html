@@ -87,10 +87,10 @@
  		</iron-collapse>
  	</div>
  </template>
- 
- 
- 
- 
+
+
+
+
 </dom-module>
 
 <script>
@@ -107,7 +107,7 @@ Polymer({
 		}
 	},
 	ready: function(){
-		
+
 	},
 	_stylesetChanged: function(){
 		this.iconset = this.styleset.iconset;
@@ -151,8 +151,8 @@ Polymer({
 		var featureReady = function(feature){
 			self.map.mapdiv.style.cursor = 'auto';
 			feature.style = style;
-			for (var attrname in feature.style) { 
-				feature.properties[attrname] = feature.style[attrname]; 
+			for (var attrname in feature.style) {
+				feature.properties[attrname] = feature.style[attrname];
 			}
 		 	self.store.records({_id:feature.id.toString()}).data('type','feature').data('feature',feature).sync();
 		};

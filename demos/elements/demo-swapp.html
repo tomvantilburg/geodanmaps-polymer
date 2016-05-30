@@ -1,11 +1,13 @@
 <link rel="import" href="../../bower_components/polymer/polymer.html">
 <link rel="import" href="../../bower_components/iron-ajax/iron-ajax.html">
 <link rel="import" href="../../bower_components/iron-icons/maps-icons.html">
+<link rel="import" href="../../bower_components/iron-icons/social-icons.html">
 <link rel="import" href="../../bower_components/iron-selector/iron-selector.html">
 <link rel="import" href="../../bower_components/iron-pages/iron-pages.html">
-<link rel="import" href="../../bower_components/iron-flex-layout/iron-flex-layout.html">
+<link rel="import" href="../../bower_components/iron-flex-layout/iron-flex-layout-classes.html">
 <link rel="import" href="../../bower_components/iron-collapse/iron-collapse.html">
 <link rel="import" href="../../bower_components/neon-animation/neon-animation.html">
+<link rel="import" href="../../bower_components/paper-dialog/paper-dialog.html">
 <link rel="import" href="../../bower_components/paper-toolbar/paper-toolbar.html">
 <link rel="import" href="../../bower_components/paper-drawer-panel/paper-drawer-panel.html">
 <link rel="import" href="../../bower_components/paper-header-panel/paper-header-panel.html">
@@ -25,26 +27,32 @@
 <link rel="import" href="../../bower_components/paper-menu/paper-menu.html">
 <link rel="import" href="../../bower_components/paper-dropdown-menu/paper-dropdown-menu.html">
 <link rel="import" href="../../bower_components/paper-menu-button/paper-menu-button.html">
+<link rel="import" href="../../bower_components/paper-tooltip/paper-tooltip.html">
 
 <link rel="import" href="../../bower_components/paper-toast/paper-toast.html">
 <link rel="import" href="../../bower_components/paper-scroll-header-panel/paper-scroll-header-panel.html">
 <link rel="import" href="../../elements/gm-mappu-map.html">
+<link rel="import" href="../../elements/gm-mappu-sketch.html">
+<link rel="import" href="../../elements/gm-mappu-stylesets.html">
+<link rel="import" href="../../elements/gm-plugins-nstwitter.html">
+<link rel="import" href="../../elements/gm-mappu-zoombuttons.html">
+<link rel="import" href="../../elements/gm-geosearch.html">
+<link rel="import" href="../../elements/gm-cow-core.html">
+<link rel="import" href="../../elements/gm-cow-connector.html">
+<link rel="import" href="../../elements/gm-mappu-cowlayer.html">
+<link rel="import" href="../../elements/gm-mappu-drawbuttons.html">
+<link rel="import" href="../../elements/gm-mappu-stylesets.html">
 
 
 <dom-module id="demo-swapp">
 
-
-
-
+<style include="iron-flex iron-flex-alignment">
 <style>
 	paper-header-panel {
-	  height: 100%;
 	  background: white;
 	}
 
 	paper-badge {
-    	--paper-badge-margin-left: -8px;
-    	--paper-badge-margin-bottom: -12px;
 		--paper-badge-background: orange;
 	}
 	paper-card {
@@ -57,8 +65,13 @@
 		background: #3f51b5;
 		color: white;
 	}
+	.incidentlist {
+		padding: 5px;
+	}
+	.incidentitem{
+		cursor: pointer;
+	}
 	.taskcard {
-		width: 98%;
 		margin-left: 10px;
 		margin-bottom: 5px;
 		padding: 10px;
@@ -70,8 +83,12 @@
 	.completed {
 		color: grey;
 	}
-	.contentpanel {
-		height: 88%;/* FIXME */
+	.content {
+		position: absolute;
+		top: 0px;
+		left: 0px;
+		right: 0px;
+		bottom: 0px;
 	}
 	.toggleright {
 		padding: 10px;
@@ -79,18 +96,59 @@
 	#toast {
 		z-index: 1000;
 	}
+	.pages {
+		background-color: white;
+	}
+	.person {
+		min-width: 100px;
+	}
+	.person iron-icon{
+		color :grey;
+	}
+	#zoombuttons{
+		position: absolute;
+		bottom: 100px;
+		right: 10px;
+	}
+	#geosearch {
+		position: absolute;
+		top: 0;
+		left: 10px;
+		right: 10;
+		width: 150px;
+		z-index: 101;
+	}
 
 </style>
 <template>
-	<iron-ajax id="ajaxRequest"
-		auto
+
+	<gm-cow-core id="cowcore"
+		config="{{cowconfig}}"
+		core="{{core}}"
+		></gm-cow-core>
+
+	<gm-cow-connector id="cowconnector"
+		itemconfig = "{{itemconfig}}"
+		account="{{cowaccount}}"
+		core="{{core}}"
+		selectedproject="{{selectedcowproject}}"
+		project="{{curcowproject}}"
+		users="{{cowusers}}"
+		projects="{{cowprojects}}"
+		activeuser="{{activecowuser}}"
+		featureitems="{{featureitems}}"
+		itemstore="{{itemstore}}"
+		></gm-cow-connector>
+	<iron-ajax id="loginRequest"
 		url="http://localhost/swapp_server/api/Login"
-		body='{"password": "kevin", "username": "kevin"}'
+		body='{"password": "", "username": ""}'
 		method="post"
 		content-Type="application/json"
 		verbose="true"
 		with-credentials="false"
 		response-type="json"
+		on-error="loginerror"
+		last-error="{{lastloginerror}}"
 		last-response="{{account}}"></iron-ajax>
 	<iron-ajax id="incidentsRequest"
 		url="http://localhost/swapp_server/api/incidentlist"
@@ -120,20 +178,38 @@
 		with-credentials="true"
 		response-type="json"
 		last-response="{{jobtitledata}}"></iron-ajax>
-
+	<iron-ajax id="finishTask"
+		body='{"Status": "Completed"}'
+		content-Type="application/json"
+		method="patch"
+		verbose="true"
+		with-credentials="true"
+		response-type="json"
+		on-response="_selectedProjectChanged"
+		last-response="{{finishedtask}}"></iron-ajax>
 
 	<paper-toast id="toast" text="{{toasttext}}"></paper-toast>
-
+	<paper-dialog id='loginDialog' opened>
+		<h2>Login</h2>
+		<div>
+	    	<paper-input label="naam" value='{{password}}' focused=true ></paper-input>
+			<paper-input label="password" type='password' value='{{username}}'></paper-input>
+			<template is="dom-if" if="{{lastloginerror.error}}">
+				<div style="color:red;">Ongeldige gebruikersnaam of password</div>
+			</template>
+	  	</div>
+		<div class="buttons">
+		    <paper-button dialog-confirm raised on-click='login'>Login</paper-button>
+		</div>
+	</paper-dialog>
 	<paper-drawer-panel id='drawerpanel' drawer-width='300px'>
 	 <!-- MENU -->
 	 <paper-header-panel mode="seamed" drawer>
 	 	<paper-toolbar>
 	 		<img src='../images/icon-eagle.png'/>
 	 	</paper-toolbar>
-		<div class='content'>
-
-
-			<paper-dropdown-menu label="Sort by">
+		<div class='content incidentlist'>
+			<paper-dropdown-menu label="Sort by" class="horizontal end-justified layout">
 			  <paper-menu attr-for-selected='name' selected="{{sortval}}" class="dropdown-content">
 			    <paper-item name='creationTimeDateTime'>Creation</paper-item>
 			    <paper-item name='tmp'>Last udate</paper-item>
@@ -146,8 +222,8 @@
 					items='{{incidentlist.incidents}}'
 					sort="{{sortincidents(sortval)}}"
 					filter="{{filterincidents(jobtitleid)}}">
-					<paper-icon-item name="{{item.incidentId}}">
-
+					<paper-icon-item class='incidentitem' name="{{item.incidentId}}">
+						<iron-icon item-icon src="http://localhost/swapp_server/api/incidentsymbol/incidentsymbol?symbol=s"></iron-icon>
 						<paper-item-body two-line>
 							<div><span>{{item.name}}</span> <paper-badge label="{{getopentasks(item)}}"></paper-badge></div>
 							<div secondary>{{item.creationTimeDateTime}}</div>
@@ -161,11 +237,11 @@
 		</div>
     </paper-header-panel>
     <!--MAIN SCREEN-->
-    <paper-header-panel main>
+    <paper-header-panel main class='content'>
+
     	<paper-toolbar>
     		<paper-icon-button icon="menu" paper-drawer-toggle></paper-icon-button>
     		<div class='title' flex>{{incidentdata.incident.name}}</div>
-
 			<paper-menu-button horizontal-align="right">
 			  <paper-button class="dropdown-trigger">{{jobname}}</paper-button>
 			  <paper-card  class="dropdown-content" heading="{{account.user.name}}">
@@ -185,20 +261,17 @@
 				 </div>
 				</paper-card>
 			</paper-menu-button>
-
-
     	</paper-toolbar>
-		<div main class='contentpanel'>
-			<paper-header-panel>
-				<paper-toolbar>
+		<paper-header-panel main class='content'>
+			<paper-toolbar>
 					<paper-tabs attr-for-selected="name" selected="{{selectedpage}}">
 					  <paper-tab name="logboek">Logboek</paper-tab>
 					  <paper-tab name="totaalbeeld">Totaalbeeld</paper-tab>
-					  <paper-tab name="taken">Taken</paper-tab>
+					  <paper-tab name="taken">Taken<paper-badge label="{{getopentasks(item)}}"></paper-badge></paper-tab>
 					  <paper-tab name="kaart">Kaart</paper-tab>
 					</paper-tabs>
-				</paper-toolbar>
-			<iron-pages main class='content fit pages' attr-for-selected="name" selected="{{selectedpage}}">
+			</paper-toolbar>
+			<iron-pages main class='content pages' attr-for-selected="name" selected="{{selectedpage}}">
 				<div name='logboek'>
 						<h2>Logboek</h2>
 				</div>
@@ -208,32 +281,65 @@
 					<div class='toggleright'>
 						<paper-toggle-button active="{{showclosedtasks}}">Include closed tasks</paper-toggle-button>
 					</div>
-					<template is="dom-repeat" items="{{incidenttasks.incidentTasks.0.tasks}}" filter="{{openclosedtasks(showclosedtasks)}}">
+					<template is="dom-repeat" id="tasksrepeater" items="{{incidenttasks.incidentTasks.0.tasks}}" filter="{{openclosedtasks(showclosedtasks)}}">
 						<paper-material class$='{{item.status}} {{getmyclass(item)}} taskcard'>
-							<div on-click="toggle">
+							<div on-click="toggle" class='horizontal layout'>
 								<template is="dom-if" if={{!item.tasks}}>
-									<paper-checkbox></paper-checkbox>
+									<paper-checkbox on-click='setDone' checked$="{{item.done}}"></paper-checkbox>
 								</template>
-								{{item.name}}
+								<div class='flex'>{{item.name}}</div>
 								<template is="dom-if" if={{item.forms.0}}>
 									{{item.forms.0.url}}
+								</template>
+								<template is="dom-if" if={{!item.stakeHoldersLgIds.1}}>
+									<div class='person'>
+										<iron-icon icon="social:person"></iron-icon>
+										{{_getStakeHolders(item.stakeHoldersLgIds)}}
+									</div>
+								</template>
+								<template is="dom-if" if={{item.stakeHoldersLgIds.1}}>
+									<div class='person' style="display:inline-block">
+										<iron-icon icon="social:group"></iron-icon> ...
+										<paper-tooltip position="left" animation-delay="0">{{_getStakeHolders(item.stakeHoldersLgIds)}}</paper-tooltip>
+									</div>
 								</template>
 							</div>
 							<iron-collapse>
 								<template is="dom-repeat" items="{{item.tasks}}">
-									<paper-button>{{item.name}}</paper-button>
+									<paper-button name="{{item.taskId}}" on-click="setDone">{{item.name}}</paper-button>
 								</template>
 							</iron-collapse>
 						</paper-material>
 					</template>
 
 				</div>
-				<div name="kaart">
-					<gm-mappu-map map="{{mappu}}"></gm-mappu-map>
+				<div name="kaart" class='layout horizontal'>
+					<gm-mappu-map map="{{mappu}}" zoom='15' center='[5,52]' class='flex'>
+						<gm-geosearch id="geosearch"></gm-geosearch>
+						<gm-mappu-zoombuttons id="zoombuttons" map="{{mappu}}"></gm-mappu-zoombuttons>
+					</gm-mappu-map>
+					<div id='sketchbox' style='width:300px;' class='layout vertical'>
+						<gm-mappu-sketch id="sketch"
+							layer="{{sketchlayer}}"
+							styleset="{{styleset}}"
+							store="{{itemstore}}"
+							></gm-mappu-sketch>
+						<gm-plugins-nstwitter id="nstwitterplugin" map="{{mappu}}"></gm-plugins-nstwitter>
+						<gm-mappu-stylesets styleset1="{{styleset}}"></gm-mappu-stylesets>
+
+						<gm-mappu-cowlayer
+							id="cowlayer"
+							map="{{mappu}}"
+							features="{{featureitems}}"
+							store="{{itemstore}}"
+							layer="{{cowlayer}}">
+						</gm-mappu-cowlayer>
+
+					</div>
 				</div>
 			</iron-pages>
-		</div>
-	</paper-header-panel>
+
+		</paper-header-panel>
     </paper-header-panel>
 </paper-drawer-panel>
 </template>
@@ -243,7 +349,10 @@
 Polymer({
     is: 'demo-swapp',
     properties: {
-    	map: Object,
+    	mappu: {
+			type: Object,
+			observer: '_mappuChanged'
+		},
     	account: {
     		type: Object,
     		observer: '_accountChanged'
@@ -254,7 +363,7 @@ Polymer({
     	},
 		selectedpage: {
 			observer: '_selectedPageChanged',
-			value: 'login',
+			value: 'kaart',
 			type: String
 		},
 		toasttext: {
@@ -268,6 +377,10 @@ Polymer({
 		jobtitleid: {
 			type: Number,
 			observer: '_jobtitleChanged'
+		},
+		incidentdata: {
+			type: Object,
+			observer: '_incidentdataChanged'
 		}
     },
     ready: function(){
@@ -276,7 +389,33 @@ Polymer({
     		self.$.cascore.logout();
     		self.selected = 'nouser';
     	});
+
+		this.cowconfig = {
+    			protocol: 'wss',
+    			url: 'websocket.geodan.nl',
+    			port: 443,
+    			dir: 'eaglespace',
+    			key: 'eaglespace'
+    		};
+
     },
+	login: function(){
+		this.$.loginRequest.body = {username: this.username, password: this.password};
+		this.$.loginRequest.generateRequest();
+	},
+	loginerror: function(){
+		this.$.loginDialog.open();
+	},
+	_mappuChanged: function(){
+		this.sketchlayer = new d3.mappu.VectorLayer('Sketch',{
+    		reproject: true,
+			style: {
+				stroke: 'blue',
+				fill: 'blue'
+			},
+			labelfield: 'name'
+    	}).addTo(this.mappu);
+	},
 	toggle: function(e) {
        e.currentTarget.nextElementSibling.toggle();
     },
@@ -289,7 +428,18 @@ Polymer({
 		};
 		return ismyjob?'mytask':null;
 	},
-
+	_getStakeHolders: function(arr){
+		var self = this;
+		var returnarr = [];
+		if(typeof arr=='number') arr=[arr];
+		arr = arr?arr:[];
+		arr.forEach(function(d){
+			self.jobtitledata.jobTitles.forEach(function(x){
+				if (x.jobTitleId == d) returnarr.push(x.name);
+			});
+		});
+		return returnarr.join(',');
+	},
 	sortincidents: function(sortby){
 		switch (sortby){
 			case 'creationTimeDateTime':
@@ -311,11 +461,25 @@ Polymer({
 	},
 	openclosedtasks: function(showclosedtasks){
 		return function(task){
-			if (showclosedtasks || task.status != "Completed"){
+			if (showclosedtasks || (task.status != "Completed" && task.status != "Resolved")){
 				return true;
 			};
 			return false;
 		}
+	},
+	setDone: function(e){
+		var model = this.$.tasksrepeater.modelForElement(e.target);
+	    var task = model.item;
+		var conditionid = e.target.name;
+		if (conditionid) {
+			this.$.finishTask.params = {"conditionId": conditionid };
+			this.$.finishTask.method = 'post';
+		}
+		this.$.finishTask.url = "http://localhost/swapp_server/api/Task/" + task.taskId;
+		this.$.finishTask.headers.token = this.token;
+		this.$.finishTask.generateRequest();
+		this.$.finishTask.params = null; //reset params
+		this.$.finishTask.method = 'patch';
 	},
 	_resetProject:function(){
 		this.selectedproject = null;
@@ -330,6 +494,18 @@ Polymer({
 			this.jobname = acc.user.jobTitles.filter(d=>d.jobTitleId == this.jobtitleid)[0].name;
 			this.$.jobTitleRequest.headers.token = this.token;
 			this.$.jobTitleRequest.generateRequest();
+
+			this.cowaccount = {
+	    		id: acc.user.userId,
+	    		name: acc.user.name
+	    	};
+			var user = this.core.users(acc.user.userId.toString());
+	    	if (!user){
+	    		user = this.core.users({_id: acc.user.userId.toString()});
+	    	}
+			user.data({name: acc.user.name}).sync()
+	    	this.core.user(acc.user.userId);
+
 		}
     },
 	_jobtitleChanged: function(id){
@@ -354,9 +530,24 @@ Polymer({
 			this.$.incidentTasksRequest.generateRequest();
 		}
 	},
+	_incidentdataChanged: function(data){
+		/* COW */
+		if (data){
+			var id = data.incident.incidentId;
+			var cowproject = this.core.projects(id.toString());
+			if (!cowproject){
+				cowproject = this.core.projects({_id: id.toString()})
+			}
+			cowproject.data({name: data.incident.name,incidentLocation: {lat:52.2, lng: 5.2, zoom: 16}}).sync();
+			this.selectedcowproject = id.toString();
+		}
+	},
 	_selectedPageChanged: function(){
 		var mappu = this.querySelector('gm-mappu-map');
 		mappu.map.resize();//TODO eewww....
+		mappu.map.center = [5,52];
+		mappu.map.redraw();
+
 	}
 });
 </script>
